@@ -160,6 +160,63 @@ function coverage_stop {
 }
 
 function coverage_start {
-	
+	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
+	do
+		eval "remote_$1_compute_start_ubuntu $id"
+	done
+
+	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
+	do
+		eval "remote_$1_controller_start_ubuntu $id"
+	done
 }
 
+function coverage_init {
+        for id in $(fuel nodes | awk ' {print $1} ')
+        do
+                remote_init_ubuntu $id
+        done
+}
+
+function contains() {
+    [[ $1 =~ $2 ]] && exit(0) || exit(1)
+}
+#$2 - init/start/stop
+#$1 - ubuntu/centos
+#$3 - neutron/nova
+
+$valid_distr="ubuntu centos"
+$valid_cmd="init start stop"
+$valid_component="nova neutron"
+
+contains "centos" $valid_distr
+case $1 in
+     ubuntu)
+         echo "Ubuntu"
+         case $2 in
+		init)
+		  echo "Init"
+		  ;;
+		start)
+                  echo "Start"
+                  ;;
+                stop)
+                  echo "Stop"
+                  ;;
+         esac
+         ;;
+     centos)
+         echo "Centos"
+         case $2 in
+                init)
+                  echo "Init"
+                  ;;
+                start)
+                  echo "Start"
+                  ;;
+                stop)
+                  echo "Stop"
+                  ;;
+         esac
+         ;;
+esac
