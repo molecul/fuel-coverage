@@ -1,5 +1,9 @@
 #!/bin/bash
 
+valid_distr="ubuntu centos"
+valid_cmd="init start stop"
+valid_component="nova neutron"
+
 function remote_init_ubuntu {
 	ssh root@node-$1 'bash -s' << EOF
 echo "deb http://archive.ubuntu.com/ubuntu trusty main restricted" >>/etc/apt/sources.list
@@ -179,23 +183,22 @@ function coverage_init {
 }
 
 function contains() {
-    [[ $1 =~ $2 ]] && exit(0) || exit(1)
+  # echo -n "Check current host [it's the master node?]....."
+   
+   echo -n "Сheck the specified distribution....."
+   [[ $valid_distr =~ (^| )$1($| ) ]] && echo -e '\033[32mOK\033[0m' || echo -e '\033[31mERR\033[0m'
+   echo -n "Check the specified command....."
+   [[ $valid_cmd =~ (^| )$2($| ) ]] && echo -e '\033[32mOK\033[0m' || echo -e '\033[31mERR\033[0m'
+   echo -n "Check the specified component....."
+   [[ $valid_component =~ (^| )$3($| ) ]] && echo -e '\033[32mOK\033[0m' || echo -e '\033[31mERR\033[0m'
 }
-#$2 - init/start/stop
-#$1 - ubuntu/centos
-#$3 - neutron/nova
 
-$valid_distr="ubuntu centos"
-$valid_cmd="init start stop"
-$valid_component="nova neutron"
-
-contains "centos" $valid_distr
+contains $1 $2 $3
 case $1 in
      ubuntu)
-         echo "Ubuntu"
          case $2 in
 		init)
-		  echo "Init"
+		  coverage_init
 		  ;;
 		start)
                   echo "Start"
@@ -203,10 +206,12 @@ case $1 in
                 stop)
                   echo "Stop"
                   ;;
+		*)
+		  exit
+		  ;;
          esac
          ;;
      centos)
-         echo "Centos"
          case $2 in
                 init)
                   echo "Init"
@@ -217,6 +222,12 @@ case $1 in
                 stop)
                   echo "Stop"
                   ;;
+		*)
+		  exit
+                  ;;
          esac
          ;;
+     *)
+	exit
+        ;; 
 esac
