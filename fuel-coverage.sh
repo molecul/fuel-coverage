@@ -183,8 +183,8 @@ function coverage_init {
 }
 
 function contains() {
-  # echo -n "Check current host [it's the master node?]....."
-   
+   echo -n "Check current host [it's the master node?]....."
+#   fuel > /dev/null 2>&1 && echo -e '\033[32mYES\033[0m' || eval "echo -e '\033[31mNO\033[0m';exit"
    echo -n "Сheck the specified distribution....."
    [[ $valid_distr =~ (^| )$1($| ) ]] && echo -e '\033[32mOK\033[0m' || echo -e '\033[31mERR\033[0m'
    echo -n "Check the specified command....."
@@ -201,10 +201,10 @@ case $1 in
 		  coverage_init
 		  ;;
 		start)
-                  echo "Start"
+                  coverage_start
                   ;;
                 stop)
-                  echo "Stop"
+                  coverage_stop
                   ;;
 		*)
 		  exit
