@@ -79,7 +79,7 @@ EOF
 }
 
 function remote_nova_compute_start_ubuntu {
-	ssh root@node-$1 'service nova-compute stop > /dev/null 2>&1;rm -rf "/coverage/nova";mkdir -p "/coverage/nova";echo "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova ;cd /coverage/nova;/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-compute --config-file=/etc/nova/nova.conf --config-file=/etc/nova/nova-compute.conf > /dev/null 2>&1 &'
+	ssh root@node-$1 'service nova-compute stop > /dev/null 2>&1;rm -rf "/coverage/nova";mkdir -p "/coverage/nova";echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova ;cd /coverage/nova;/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-compute --config-file=/etc/nova/nova.conf --config-file=/etc/nova/nova-compute.conf > /dev/null 2>&1 &'
 }
 
 function remote_nova_compute_stop_ubuntu {
@@ -87,7 +87,7 @@ function remote_nova_compute_stop_ubuntu {
 }
 
 function remote_nova_controller_start_ubuntu {
-	ssh root@node-$1 'for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do service ${i} stop > /dev/null 2>&1; done; rm -rf "/coverage/nova";mkdir -p "/coverage/nova";echo "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova;cd /coverage/nova;for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/$i --config-file=/etc/nova/nova.conf > /dev/null 2>&1 & done'
+	ssh root@node-$1 'for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do service ${i} stop > /dev/null 2>&1; done; rm -rf "/coverage/nova";mkdir -p "/coverage/nova";echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova;cd /coverage/nova;for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/$i --config-file=/etc/nova/nova.conf > /dev/null 2>&1 & done'
 }
 
 function remote_nova_controller_stop_ubuntu {
