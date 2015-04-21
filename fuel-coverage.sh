@@ -6,7 +6,8 @@ valid_component="nova neutron"
 
 function remote_init_ubuntu {
 	ssh root@node-$1 'bash -s' << EOF
-echo "deb http://archive.ubuntu.com/ubuntu trusty main restricted" >>/etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu/ trusty main restricted universe" >/etc/apt/sources.list
+echo "deb-src http://archive.ubuntu.com/ubuntu/ trusty main restricted universe" >>/etc/apt/sources.list
 apt-get update
 apt-get install -y --force-yes python-pip python-dev gcc
 pip install setuptools --upgrade
@@ -31,7 +32,6 @@ EOF
 function remote_neutron_compute_stop_ubuntu {
 	ssh root@node-$1 'bash -s' << EOF
 kill `ps hf -C coverage | grep "neutron-openvswitch-agent" | awk '{ print $1; exit }'`
-sleep 5
 service neutron-plugin-openvswitch-agent start > /dev/null 2>&1
 EOF
 }
@@ -79,88 +79,42 @@ EOF
 }
 
 function remote_nova_compute_start_ubuntu {
-	ssh root@node-$1 'bash -s' << EOF
-service nova-compute stop > /dev/null 2>&1
-rm -rf "/coverage/nova"
-mkdir -p "/coverage/nova"
-echo "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova
-cd /coverage/nova
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-compute --config-file=/etc/nova/nova.conf --config-file=/etc/nova/nova-compute.conf > /dev/null 2>&1 &
-EOF
+	ssh root@node-$1 'service nova-compute stop > /dev/null 2>&1;rm -rf "/coverage/nova";mkdir -p "/coverage/nova";echo "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova ;cd /coverage/nova;/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-compute --config-file=/etc/nova/nova.conf --config-file=/etc/nova/nova-compute.conf > /dev/null 2>&1 &'
 }
 
 function remote_nova_compute_stop_ubuntu {
-	ssh root@node-$1  'bash -s' << EOF
-kill `ps hf -C coverage | grep "nova-compute" |awk '{ print $1; exit }'`
-service nova-compute start > /dev/null 2>&1
-EOF
+	ssh root@node-$1 'kill $(ps hf -C coverage | grep "nova-compute" | awk "{print \$1;exit}");service nova-compute start > /dev/null 2>&1'
 }
 
 function remote_nova_controller_start_ubuntu {
-	ssh root@node-$1 'bash -s' << EOF
-service nova-api stop > /dev/null 2>&1
-service nova-novncproxy stop > /dev/null 2>&1
-service nova-objectstore stop > /dev/null 2>&1
-service nova-consoleauth stop > /dev/null 2>&1
-service nova-scheduler stop > /dev/null 2>&1
-service nova-conductor stop > /dev/null 2>&1
-service nova-cert stop > /dev/null 2>&1
-rm -rf "/coverage/nova"
-mkdir -p "/coverage/nova"
-echo "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova
-cd /coverage/nova
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-api --config-file=/etc/nova/nova.conf > /dev/null 2>&1 &
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-novncproxy --config-file=/etc/nova/nova.conf > /dev/null 2>&1 &
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-objectstore --config-file=/etc/nova/nova.conf > /dev/null 2>&1 &
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-consoleauth --config-file=/etc/nova/nova.conf > /dev/null 2>&1 &
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-scheduler --config-file=/etc/nova/nova.conf > /dev/null 2>&1 &
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-conductor --config-file=/etc/nova/nova.conf > /dev/null 2>&1 &
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-cert --config-file=/etc/nova/nova.conf > /dev/null 2>&1 &
-EOF
+	ssh root@node-$1 'for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do service ${i} stop > /dev/null 2>&1; done; rm -rf "/coverage/nova";mkdir -p "/coverage/nova";echo "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova;cd /coverage/nova;for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/$i --config-file=/etc/nova/nova.conf > /dev/null 2>&1 & done'
 }
 
 function remote_nova_controller_stop_ubuntu {
-	ssh root@node-$1 'bash -s'<< EOF
-kill `ps hf -C coverage | grep "nova-api" |awk '{ print $1; exit }'`
-kill `ps hf -C coverage | grep "nova-novncproxy" |awk '{ print $1; exit }'`
-kill `ps hf -C coverage | grep "nova-objectstore" |awk '{ print $1; exit }'`
-kill `ps hf -C coverage | grep "nova-consoleauth" |awk '{ print $1; exit }'`
-kill `ps hf -C coverage | grep "nova-scheduler" |awk '{ print $1; exit }'`
-kill `ps hf -C coverage | grep "nova-conductor" |awk '{ print $1; exit }'`
-kill `ps hf -C coverage | grep "nova-cert" |awk '{ print $1; exit }'`
-service nova-api start > /dev/null 2>&1
-service nova-novncproxy start > /dev/null 2>&1
-service nova-objectstore start > /dev/null 2>&1
-service nova-consoleauth start > /dev/null 2>&1
-service nova-scheduler start > /dev/null 2>&1
-service nova-conductor start > /dev/null 2>&1
-service nova-cert start > /dev/null 2>&1a
-EOF
+	ssh root@node-$1 'for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done;for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do service ${i} start; done'
 }
 
 function coverage_stop {
-	gen_comp=`fuel nodes | grep compute |  awk ' {print $1; exit;} '`
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
-	ssh root@node-$gen_comp "mkdir -p /coverage/report/$1"
 	ssh root@node-$gen_ctrl "mkdir -p /coverage/report/$1"
+	mkdir -p /tmp/coverage/report/$1/
 	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
 	do
 		eval "remote_$1_compute_stop_ubuntu $id"
-		sleep 5
-        	ssh root@node-$id "scp '/coverage/$1/.coverage*' root@node-$gen_comp:/coverage/report/$1/"
+        	scp root@node-$id:/coverage/$1/.coverage* /tmp/coverage/report/$1/
 	done
 
 	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
 	do
                 eval "remote_$1_controller_stop_ubuntu $id"
-                sleep 5
-                ssh root@node-$id "scp '/coverage/$1/.coverage*' root@node-$gen_ctrl:/coverage/report/$1/"
+                scp root@node-$id:/coverage/$1/.coverage* /tmp/coverage/report/$1/
 	done
 
-	ssh root@node-$gen_comp "cd /coverage/report/$1/; coverage combine; coverage report -m >> report_$1"
+	scp /tmp/coverage/report/$1/.coverage* root@node-$gen_ctrl:/coverage/report/$1/
+	rm -rf /tmp/coverage
 	ssh root@node-$gen_ctrl "cd /coverage/report/$1/; coverage combine; coverage report -m >> report_$1"
-	scp root@node-$gen_comp:/coverage/report/$1/report_$1 ~/report_compute_$1
-	scp root@node-$gen_ctrl:/coverage/report/$1/report_$1 ~/report_controller_$1
+	scp root@node-$gen_ctrl:/coverage/report/$1/report_$1 ~/report_$1
+	
 }
 
 function coverage_start {
@@ -176,7 +130,7 @@ function coverage_start {
 }
 
 function coverage_init {
-        for id in $(fuel nodes | awk ' {print $1} ')
+        for id in $(fuel nodes | grep -e '[0-9]' | awk ' {print $1} ')
         do
                 remote_init_ubuntu $id
         done
