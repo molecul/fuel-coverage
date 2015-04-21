@@ -1,6 +1,6 @@
 #!/bin/bash
 
-valid_distr="ubuntu centos"
+valid_distr="ubuntu"
 valid_cmd="init start stop"
 valid_component="nova neutron"
 
@@ -157,10 +157,10 @@ function coverage_stop {
                 ssh root@node-$id "scp '/coverage/$1/.coverage*' root@node-$gen_ctrl:/coverage/report/$1/"
 	done
 
-	ssh root@node-$gen_comp "cd /coverage/report/$1; coverage combine; coverage report -m >> report_$1"
-	ssh root@node-$gen_ctrl "cd /coverage/general/$1; coverage combine; coverage report -m >> report_$1"
-	scp root@node-$gen_comp:/coverage/general/$1/report_$1 ~/report_compute_$1
-	scp root@node-$gen_ctrl:/coverage/general/$1/report_$1 ~/report_controller_$1
+	ssh root@node-$gen_comp "cd /coverage/report/$1/; coverage combine; coverage report -m >> report_$1"
+	ssh root@node-$gen_ctrl "cd /coverage/report/$1/; coverage combine; coverage report -m >> report_$1"
+	scp root@node-$gen_comp:/coverage/report/$1/report_$1 ~/report_compute_$1
+	scp root@node-$gen_ctrl:/coverage/report/$1/report_$1 ~/report_controller_$1
 }
 
 function coverage_start {
@@ -201,10 +201,10 @@ case $1 in
 		  coverage_init
 		  ;;
 		start)
-                  coverage_start
+                  coverage_start $3
                   ;;
                 stop)
-                  coverage_stop
+                  coverage_stop $3
                   ;;
 		*)
 		  exit
@@ -214,13 +214,10 @@ case $1 in
      centos)
          case $2 in
                 init)
-                  echo "Init"
                   ;;
                 start)
-                  echo "Start"
                   ;;
                 stop)
-                  echo "Stop"
                   ;;
 		*)
 		  exit
