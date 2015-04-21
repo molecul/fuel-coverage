@@ -19,63 +19,20 @@ EOF
 }
 
 function remote_neutron_compute_start_ubuntu {
-	ssh root@node-$1 'bash -s' << EOF
-rm -rf "/coverage/neutron"
-mkdir -p "/coverage/neutron"
-service neutron-plugin-openvswitch-agent stop > /dev/null 2>&1
-echo "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron" > /coverage/rc/.coveragerc-neutron
-cd /coverage/neutron
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-openvswitch-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/ovs-agent.log > /dev/null 2>&1 &
-EOF
+	ssh root@node-$1 'rm -rf "/coverage/neutron";mkdir -p "/coverage/neutron";service neutron-plugin-openvswitch-agent stop > /dev/null 2>&1; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron" > /coverage/rc/.coveragerc-neutron;cd /coverage/neutron;/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-openvswitch-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/ovs-agent.log > /dev/null 2>&1 &'
 }
 
 function remote_neutron_compute_stop_ubuntu {
-	ssh root@node-$1 'bash -s' << EOF
-kill `ps hf -C coverage | grep "neutron-openvswitch-agent" | awk '{ print $1; exit }'`
-service neutron-plugin-openvswitch-agent start > /dev/null 2>&1
-EOF
+	ssh root@node-$1 'kill $(ps hf -C coverage | grep "neutron-plugin-openvswitch-agent" | awk "{print \$1;exit}");service neutron-plugin-openvswitch-agent start > /dev/null 2>&1'
 }
 
 function remote_neutron_controller_start_ubuntu {
-	ssh root@node-$1 'bash -s' << EOF
-pcs resource ban p_neutron-plugin-openvswitch-agent > /dev/null 2>&1
-pcs resource ban p_neutron-dhcp-agent > /dev/null 2>&1
-pcs resource ban p_neutron-plugin-openvswitch-agent > /dev/null 2>&1
-pcs resource ban p_neutron-metadata-agent > /dev/null 2>&1
-pcs resource ban p_neutron-l3-agent > /dev/null 2>&1
-service neutron-server stop > /dev/null 2>&1
-service neutron-openvswitch-agent
-rm -rf "/coverage/neutron"
-mkdir -p "/coverage/neutron"
-echo "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron" > /coverage/rc/.coveragerc-neutron
-cd /coverage/neutron
-
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-openvswitch-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/openvswitch-agent.log > /dev/null 2>&1 &
-
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-dhcp-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/dhcp_agent.ini --log-file=/var/log/neutron/dhcp-agent.log > /dev/null 2>&1 &
-
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-l3-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/l3_agent.ini --log-file=/var/log/neutron/l3-agent.log > /dev/null 2>&1 &
-
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-metadata-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/metadata_agent.ini --log-file=/var/log/neutron/metadata-agent.log > /dev/null 2>&1 &
-
-/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-server --config-file /etc/neutron/neutron.conf --log-file /var/log/neutron/server.log --config-file /etc/neutron/plugin.ini > /dev/null 2>&1 &
-EOF
+	ssh root@node-$1 'for i in p_neutron-plugin-openvswitch-agent p_neutron-dhcp-agent p_neutron-plugin-openvswitch-agent p_neutron-metadata-agent p_neutron-l3-agent; do pcs resource ban ${i} > /dev/null 2>&1; done;service neutron-server stop > /dev/null 2>&1;service neutron-openvswitch-agent;rm -rf "/coverage/neutron";mkdir -p "/coverage/neutron";echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron" > /coverage/rc/.coveragerc-neutron;cd /coverage/neutron;/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-openvswitch-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/openvswitch-agent.log > /dev/null 2>&1 & /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-server --config-file /etc/neutron/neutron.conf --log-file /var/log/neutron/server.log --config-file /etc/neutron/plugin.ini > /dev/null 2>&1 & for i in dhcp l3 metadata; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-${i}-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/${i}_agent.ini --log-file=/var/log/neutron/${i}-agent.log > /dev/null 2>&1 & done'
 }
 
+
 function remote_neutron_controller_stop_ubuntu {
-	ssh root@node-$1 'bash -s' << EOF
-kill `ps hf -C coverage | grep "neutron-server" |awk '{ print $1; exit }'`
-kill `ps hf -C coverage | grep "neutron-openvswitch-agent" |awk '{ print $1; exit }'`
-kill `ps hf -C coverage | grep "neutron-dhcp-agent" |awk '{ print $1; exit }'`
-kill `ps hf -C coverage | grep "neutron-l3-agent" |awk '{ print $1; exit }'`
-kill `ps hf -C coverage | grep "neutron-metadata-agent" |awk '{ print $1; exit }'`
-pcs resource clear p_neutron-plugin-openvswitch-agent > /dev/null 2>&1
-pcs resource clear p_neutron-dhcp-agent > /dev/null 2>&1
-pcs resource clear p_neutron-plugin-openvswitch-agent > /dev/null 2>&1
-pcs resource clear p_neutron-metadata-agent > /dev/null 2>&1
-pcs resource clear p_neutron-l3-agent > /dev/null 2>&1
-service neutron-server start > /dev/null 2>&1
-EOF
+	ssh root@node-$1 'for i in neutron-server neutron-openvswitch-agent neutron-dhcp-agent neutron-l3-agent neutron-metadata-agent; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in p_neutron-plugin-openvswitch-agent p_neutron-dhcp-agent p_neutron-plugin-openvswitch-agent p_neutron-metadata-agent p_neutron-l3-agent; do pcs resource clear ${i} > /dev/null 2>&1;done;service neutron-server start > /dev/null 2>&1'
 }
 
 function remote_nova_compute_start_ubuntu {
