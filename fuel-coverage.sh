@@ -51,6 +51,21 @@ function remote_nova_controller_stop_ubuntu {
 	ssh root@node-$1 'for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done;for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do service ${i} start; done'
 }
 
+fucntion remote_heat_controller_start_ubuntu {
+	ssh root@node-$1 'for i in heat-api-cfn heat-api heat-api-cloudwatch; do service ${i} stop; done; pcs resource ban heat-engine > /dev/null 2>&1;rm -rf "/coverage/heat"; mkdir -p "/coverage/heat"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=heat\r\n" >> /coverage/rc/.coveragerc-heat; cd /coverage/heat;for i in heat-api-cfn heat-api heat-engine heat-api-cloudwatch;do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-heat /usr/bin/$i >/dev/null 2>&1 % done'
+}
+
+function remote_heat_controller_stop_ubuntu {
+	ssh root@node-$1 'for i in heat-api-cfn heat-api heat-engine heat-api-cloudwatch; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in heat-api-cfn heat-api heat-api-cloudwatch; do service ${i} start; done; do pcs resource clear heat-engine > /dev/null 2>&1;'
+}
+
+function remote_heat_compute_start_ubuntu {
+}
+
+function remote_heat_compute_stop_ubuntu {
+}
+
+
 function coverage_stop {
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
 	ssh root@node-$gen_ctrl "mkdir -p /coverage/report/$1"
