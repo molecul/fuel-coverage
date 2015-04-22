@@ -123,6 +123,25 @@ function remote_glance_compute_stop_ubuntu {
 
 ##########
 
+function remote_cinder_controller_start_ubuntu {
+        ssh root@node-$1 'for i in cinder-api cinder-scheduler; do service ${i} stop; done;rm -rf "/coverage/cinder"; mkdir -p "/coverage/cinder"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=cinder\r\n" >> /coverage/rc/.coveragerc-cinder; cd "/coverage/cinder";for i in cinder-api cinder-scheduler; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-cinder /usr/bin/${i} --config-file=/etc/cinder/cinder.conf --log-file=/var/log/cinder/${i}.log >/dev/null 2>&1 & done'
+}
+
+function remote_cinder_controller_stop_ubuntu {
+        ssh root@node-$1 'for i in cinder-api cinder-scheduler; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in cinder-api cinder-scheduler; do service ${i} start; done'
+}
+
+function remote_cinder_compute_start_ubuntu {
+        echo "Skiped node-$1 (compute without cinder)"
+}
+
+function remote_cinder_compute_stop_ubuntu {
+        echo "Skiped node-$1 (compute without cinder)"
+}
+
+
+##########
+
 function coverage_stop {
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
 	ssh root@node-$gen_ctrl "mkdir -p /coverage/report/$1"
