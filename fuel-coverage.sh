@@ -2,7 +2,7 @@
 
 valid_distr="ubuntu"
 valid_cmd="init start stop"
-valid_component="nova neutron heat"
+valid_component="nova neutron heat murano"
 
 function remote_init_ubuntu {
 	ssh root@node-$1 'bash -s' << EOF
@@ -69,7 +69,7 @@ function remote_heat_compute_stop_ubuntu {
 
 ##########
 function remote_murano_controller_start_ubuntu {
-        ssh root@node-$1 'for i in murano-api murano-engine; do service openstack-${i} stop; done;rm -rf "/coverage/murano"; mkdir -p "/coverage/murano"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=murano\r\n" >> /coverage/rc/.coveragerc-murano; cd "/coverage/murano";for i in murano-api murano-engine; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-murano /usr/bin/${i} >/dev/null 2>&1 & done'
+        ssh root@node-$1 'for i in murano-api murano-engine; do service openstack-${i} stop; done;rm -rf "/coverage/murano"; mkdir -p "/coverage/murano"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=murano\r\n" >> /coverage/rc/.coveragerc-murano; cd "/coverage/murano";for i in murano-api murano-engine; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-murano /usr/bin/${i} --config-file=/etc/murano/murano.conf >/dev/null 2>&1 & done'
 }
 
 function remote_murano_controller_stop_ubuntu {
