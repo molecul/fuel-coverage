@@ -60,9 +60,11 @@ function remote_heat_controller_stop_ubuntu {
 }
 
 function remote_heat_compute_start_ubuntu {
+	echo "Skiped node-$1 (compute without heat)"
 }
 
 function remote_heat_compute_stop_ubuntu {
+	echo "Skiped node-$1 (compute without heat)"
 }
 
 
