@@ -2,7 +2,7 @@
 
 valid_distr="ubuntu"
 valid_cmd="init start stop"
-valid_component="nova neutron heat murano keystone glance"
+valid_component="nova neutron heat murano keystone glance cinder"
 
 function remote_init_ubuntu {
 	ssh root@node-$1 'bash -s' << EOF
