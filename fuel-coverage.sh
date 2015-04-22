@@ -87,7 +87,7 @@ function remote_murano_compute_stop_ubuntu {
 ##########
 
 function remote_keystone_controller_start_ubuntu {
-        ssh root@node-$1 'service keystone stop;rm -rf "/coverage/keystone"; mkdir -p "/coverage/keystone"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=keystone\r\n" >> /coverage/rc/.coveragerc-keystone; cd "/coverage/keystone";/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-keystone /usr/bin/keystone-all >/dev/null 2>&1'
+        ssh root@node-$1 'service keystone stop;rm -rf "/coverage/keystone"; mkdir -p "/coverage/keystone"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=keystone\r\n" >> /coverage/rc/.coveragerc-keystone; cd "/coverage/keystone";/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-keystone /usr/bin/keystone-all >/dev/null 2>&1 &'
 }
 
 function remote_keystone_controller_stop_ubuntu {
