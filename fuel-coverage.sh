@@ -2,7 +2,7 @@
 
 valid_distr="ubuntu"
 valid_cmd="init start stop"
-valid_component="nova neutron heat murano keystone"
+valid_component="nova neutron heat murano keystone glance"
 
 function remote_init_ubuntu {
 	ssh root@node-$1 'bash -s' << EOF
@@ -103,7 +103,25 @@ function remote_keystone_compute_stop_ubuntu {
 }
 
 
+##########
 
+function remote_glance_controller_start_ubuntu {
+        ssh root@node-$1 'for i in glance-api glance-registry; do service ${i} stop; done;rm -rf "/coverage/glance"; mkdir -p "/coverage/glance"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=glance\r\n" >> /coverage/rc/.coveragerc-glance; cd "/coverage/glance";for i in glance-api glance-registry; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-glance /usr/bin/${i} >/dev/null 2>&1 &'
+}
+
+function remote_glance_controller_stop_ubuntu {
+        ssh root@node-$1 'for i in glance-api glance-registry; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in glance-api glance-registry; do service ${i} start; done'
+}
+
+function remote_glance_compute_start_ubuntu {
+        echo "Skiped node-$1 (compute without glance)"
+}
+
+function remote_glance_compute_stop_ubuntu {
+        echo "Skiped node-$1 (compute without glance)"
+}
+
+##########
 
 function coverage_stop {
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
