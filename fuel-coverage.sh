@@ -52,11 +52,11 @@ function remote_nova_controller_stop_ubuntu {
 }
 
 function remote_heat_controller_start_ubuntu {
-	ssh root@node-$1 'for i in heat-api-cfn heat-api heat-api-cloudwatch; do service ${i} stop; done; pcs resource ban p_heat-engine > /dev/null 2>&1;rm -rf "/coverage/heat"; mkdir -p "/coverage/heat"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=heat\r\n" >> /coverage/rc/.coveragerc-heat; cd "/coverage/heat";for i in heat-api-cfn heat-api heat-engine heat-api-cloudwatch; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-heat /usr/bin/${i} >/dev/null 2>&1 & done'
+	ssh root@node-$1 'for i in heat-api-cfn heat-api-cloudwatch heat-api; do service ${i} stop; done; pcs resource ban p_heat-engine > /dev/null 2>&1;rm -rf "/coverage/heat"; mkdir -p "/coverage/heat"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=heat\r\n" >> /coverage/rc/.coveragerc-heat; cd "/coverage/heat";for i in heat-api-cfn heat-engine heat-api-cloudwatch heat-api; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-heat /usr/bin/${i} >/dev/null 2>&1 & done'
 }
 
 function remote_heat_controller_stop_ubuntu {
-	ssh root@node-$1 'for i in heat-api-cfn heat-api heat-engine heat-api-cloudwatch; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in heat-api-cfn heat-api heat-api-cloudwatch; do service ${i} start; done; pcs resource clear p_heat-engine > /dev/null 2>&1'
+	ssh root@node-$1 'for i in heat-api-cfn heat-engine heat-api-cloudwatch heat-api; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in heat-api-cfn heat-api-cloudwatch heat-api; do service ${i} start; done; pcs resource clear p_heat-engine > /dev/null 2>&1'
 }
 
 function remote_heat_compute_start_ubuntu {
