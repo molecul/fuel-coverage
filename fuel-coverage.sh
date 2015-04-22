@@ -2,7 +2,7 @@
 
 valid_distr="ubuntu"
 valid_cmd="init start stop"
-valid_component="nova neutron heat murano keystone glance cinder"
+valid_component="nova neutron heat murano keystone glance cinder swift"
 
 function remote_init_ubuntu {
 	ssh root@node-$1 'bash -s' << EOF
@@ -137,6 +137,24 @@ function remote_cinder_compute_start_ubuntu {
 
 function remote_cinder_compute_stop_ubuntu {
         echo "Skiped node-$1 (compute without cinder)"
+}
+
+##########
+
+function remote_swift_controller_start_ubuntu {
+        ssh root@node-$1 'for i in swift-account-reaper swift-account swift-account-auditor swift-account-replicator swift-container-replicator swift-container-auditor swift-object-auditor swift-container-sync swift-container swift-proxy swift-object swift-object-replicator swift-container-updater;do service ${i} stop; done;rm -rf "/coverage/swift"; mkdir -p "/coverage/swift"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=swift\r\n" >> /coverage/rc/.coveragerc-swift; cd "/coverage/swift";for i in account-reaper account-server account-auditor account-replicator container-replicator container-auditor object-auditor container-sync container-server proxy-server object-server object-replicator container-updater; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-swift /usr/bin/swift-${i} --config-file=/etc/swift/${i%-*}-server.conf >/dev/null 2>&1 & done'
+}
+
+function remote_swift_controller_stop_ubuntu {
+        ssh root@node-$1 'for i in account-reaper account-server account-auditor account-replicator container-replicator container-auditor object-auditor container-sync container-server proxy-server object-server object-replicator container-updater; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in swift-account-reaper swift-account swift-account-auditor swift-account-replicator swift-container-replicator swift-container-auditor swift-object-auditor swift-container-sync swift-container swift-proxy swift-object swift-object-replicator swift-container-updater; do service ${i} start; done'
+}
+
+function remote_swift_compute_start_ubuntu {
+        echo "Skiped node-$1 (compute without swift)"
+}
+
+function remote_swift_compute_stop_ubuntu {
+        echo "Skiped node-$1 (compute without swift)"
 }
 
 
