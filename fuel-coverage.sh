@@ -67,6 +67,24 @@ function remote_heat_compute_stop_ubuntu {
 	echo "Skiped node-$1 (compute without heat)"
 }
 
+##########
+function remote_murano_controller_start_ubuntu {
+        ssh root@node-$1 'for i in murano-api murano-engine; do service openstack-${i} stop; done;rm -rf "/coverage/murano"; mkdir -p "/coverage/murano"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=murano\r\n" >> /coverage/rc/.coveragerc-murano; cd "/coverage/murano";for i in murano-api murano-engine; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-murano /usr/bin/${i} >/dev/null 2>&1 & done'
+}
+
+function remote_murano_controller_stop_ubuntu {
+        ssh root@node-$1 'for i in murano-api murano-engine; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in murano-api murano-engine; do service openstack-${i} start; done'
+}
+
+function remote_murano_compute_start_ubuntu {
+        echo "Skiped node-$1 (compute without murano)"
+}
+
+function remote_murano_compute_stop_ubuntu {
+        echo "Skiped node-$1 (compute without murano)"
+}
+
+##########
 
 function coverage_stop {
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
