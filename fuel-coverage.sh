@@ -2,7 +2,7 @@
 
 valid_distr="ubuntu"
 valid_cmd="init start stop"
-valid_component="nova neutron heat murano"
+valid_component="nova neutron heat murano keystone"
 
 function remote_init_ubuntu {
 	ssh root@node-$1 'bash -s' << EOF
@@ -85,6 +85,25 @@ function remote_murano_compute_stop_ubuntu {
 }
 
 ##########
+
+function remote_keystone_controller_start_ubuntu {
+        ssh root@node-$1 'service keystone stop;rm -rf "/coverage/keystone"; mkdir -p "/coverage/keystone"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=keystone\r\n" >> /coverage/rc/.coveragerc-keystone; cd "/coverage/keystone";/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-keystone /usr/bin/keystone-all >/dev/null 2>&1'
+}
+
+function remote_keystone_controller_stop_ubuntu {
+        ssh root@node-$1 'kill $(ps hf -C coverage | grep "keystone-all" | awk "{print \$1;exit}");service keystone start'
+}
+
+function remote_keystone_compute_start_ubuntu {
+        echo "Skiped node-$1 (compute without keystone)"
+}
+
+function remote_keystone_compute_stop_ubuntu {
+        echo "Skiped node-$1 (compute without keystone)"
+}
+
+
+
 
 function coverage_stop {
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
