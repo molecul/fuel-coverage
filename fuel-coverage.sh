@@ -2,7 +2,7 @@
 
 valid_distr="ubuntu"
 valid_cmd="init start stop"
-valid_component="nova neutron heat murano keystone glance cinder swift"
+valid_component="nova neutron heat murano keystone glance cinder swift sahara"
 
 function remote_init_ubuntu {
 	ssh root@node-$1 'bash -s' << EOF
@@ -157,8 +157,24 @@ function remote_swift_compute_stop_ubuntu {
         echo "Skiped node-$1 (compute without swift)"
 }
 
-
 ##########
+
+function remote_sahara_controller_start_ubuntu {
+        ssh root@node-$1 'service sahara-all stop;rm -rf "/coverage/sahara"; mkdir -p "/coverage/sahara"; echo -e "[run]omit=\r\n  */openstack/common/*\r\n  .tox/*\r\n  sahara/tests/*\r\n sahara/plugins/vanilla/v1_2_1/*\r\n sahara/plugins/vanilla/v2_3_0/*\r\n sahara/plugins/storm/*\r\ndata_file=.coverage\r\nparallel=True\r\nsource=sahara\r\n" >> /coverage/rc/.coveragerc-sahara; cd "/coverage/sahara";/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-sahara /usr/bin/sahara-all --config-file /etc/sahara/sahara.conf >/dev/null 2>&1 &'
+}
+
+function remote_sahara_controller_stop_ubuntu {
+        ssh root@node-$1 'kill $(ps hf -C coverage | grep "sahara-all" | awk "{print \$1;exit}");service sahara-all start'
+}
+
+function remote_sahara_compute_start_ubuntu {
+        echo "Skiped node-$1 (compute without sahara)"
+}
+
+function remote_sahara_compute_stop_ubuntu {
+        echo "Skiped node-$1 (compute without sahara)"
+}
+
 
 function coverage_stop {
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
