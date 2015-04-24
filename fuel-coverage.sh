@@ -164,7 +164,7 @@ function remote_sahara_controller_start_ubuntu {
 }
 
 function remote_sahara_controller_stop_ubuntu {
-        ssh root@node-$1 'kill $(ps hf -C coverage | grep "sahara-all" | awk "{print \$1;exit}");service sahara-all start'
+        ssh root@node-$1 'kill -2 $(ps hf -C coverage | grep "sahara-all" | awk "{print \$1;exit}");service sahara-all start'
 }
 
 function remote_sahara_compute_start_ubuntu {
