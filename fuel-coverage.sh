@@ -142,11 +142,11 @@ function remote_cinder_compute_stop_ubuntu {
 ##########
 
 function remote_swift_controller_start_ubuntu {
-        ssh root@node-$1 'for i in swift-account-reaper swift-account swift-account-auditor swift-account-replicator swift-container-replicator swift-container-auditor swift-object-auditor swift-container-sync swift-container swift-proxy swift-object swift-object-replicator swift-container-updater;do service ${i} stop;done;rm -rf "/coverage/swift"; mkdir -p "/coverage/swift"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=swift\r\n" >> /coverage/rc/.coveragerc-swift; cd "/coverage/swift"; for i in account-reaper account-server account-auditor account-replicator container-replicator container-auditor object-auditor container-sync container-server proxy-server object-server object-replicator container-updater; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-swift "/usr/bin/swift-${i}" --config-file="/etc/swift/${i%-*}-server.conf" > /dev/null 2>&1 & done'
+        ssh root@node-$1 'for i in swift-account-reaper swift-account swift-account-auditor swift-account-replicator swift-container-replicator swift-container-auditor swift-object-auditor swift-container-sync swift-container swift-proxy swift-object swift-object-replicator swift-container-updater;do service ${i} stop;done;rm -rf "/coverage/swift"; mkdir -p "/coverage/swift"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=swift\r\n" >> /coverage/rc/.coveragerc-swift; cd "/coverage/swift"; for i in account-reaper account-server account-auditor account-replicator container-replicator container-auditor object-auditor container-sync container-server proxy-server object-server object-replicator container-updater; do screen -S swift-${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-swift /usr/bin/swift-${i} --config-file /etc/swift/${i%-*}-server.conf;done'
 }
 
 function remote_swift_controller_stop_ubuntu {
-        ssh root@node-$1 'for i in account-reaper account-server account-auditor account-replicator container-replicator container-auditor object-auditor container-sync container-server proxy-server object-server object-replicator container-updater; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in swift-account-reaper swift-account swift-account-auditor swift-account-replicator swift-container-replicator swift-container-auditor swift-object-auditor swift-container-sync swift-container swift-proxy swift-object swift-object-replicator swift-container-updater; do service ${i} start; done'
+        ssh root@node-$1 'for i in account-reaper account-server account-auditor account-replicator container-replicator container-auditor object-auditor container-sync container-server proxy-server object-server object-replicator container-updater; do kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");done; for i in swift-account-reaper swift-account swift-account-auditor swift-account-replicator swift-container-replicator swift-container-auditor swift-object-auditor swift-container-sync swift-container swift-proxy swift-object swift-object-replicator swift-container-updater; do service ${i} start; done'
 }
 
 function remote_swift_compute_start_ubuntu {
@@ -176,6 +176,7 @@ function remote_sahara_compute_stop_ubuntu {
 }
 
 
+
 function coverage_stop {
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
 	ssh root@node-$gen_ctrl "mkdir -p /coverage/report/$1"
@@ -196,7 +197,7 @@ function coverage_stop {
 
 	scp /tmp/coverage/report/$1/.coverage* root@node-$gen_ctrl:/coverage/report/$1/
 	rm -rf /tmp/coverage
-	ssh root@node-$gen_ctrl "cd /coverage/report/$1/; coverage combine; coverage report -m >> report_$1"
+	ssh root@node-$gen_ctrl "cd /coverage/report/$1/; coverage combine; coverage report --omit=/usr/lib/python2.7/dist-packages/${i}/openstack/* -m >> report_$1"
 	scp root@node-$gen_ctrl:/coverage/report/$1/report_$1 ~/report_$1
 	ssh root@node-$gen_ctrl "rm -rf /coverage/report/$1"
 	
