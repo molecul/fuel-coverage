@@ -160,7 +160,7 @@ function remote_swift_compute_stop_ubuntu {
 ##########
 
 function remote_sahara_controller_start_ubuntu {
-        ssh root@node-$1 'service sahara-all stop;rm -rf "/coverage/sahara"; mkdir -p "/coverage/sahara"; echo -e "[run]\r\nomit=\r\n  */openstack/common/*\r\n  .tox/*\r\n  sahara/tests/*\r\n sahara/plugins/vanilla/v1_2_1/*\r\n sahara/plugins/vanilla/v2_3_0/*\r\n sahara/plugins/storm/*\r\ndata_file=.coverage\r\nparallel=True\r\nsource=sahara\r\n" >> /coverage/rc/.coveragerc-sahara; cd "/coverage/sahara";screen -S sahara-all -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-sahara /usr/bin/sahara-all --config-file /etc/sahara/sahara.conf'
+        ssh root@node-$1 'service sahara-all stop;rm -rf "/coverage/sahara"; mkdir -p "/coverage/sahara"; echo -e "[run]\r\nomit=\r\n  */openstack/common/*\r\n  .tox/*\r\n  *sahara/tests/*\r\n *sahara/plugins/vanilla/v1_2_1/*\r\n *sahara/plugins/vanilla/v2_3_0/*\r\n *sahara/plugins/storm/*\r\ndata_file=.coverage\r\nparallel=True\r\nsource=sahara\r\n" >> /coverage/rc/.coveragerc-sahara; cd "/coverage/sahara";screen -S sahara-all -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-sahara /usr/bin/sahara-all --config-file /etc/sahara/sahara.conf'
 }
 
 function remote_sahara_controller_stop_ubuntu {
