@@ -179,6 +179,8 @@ function remote_sahara_compute_stop_ubuntu {
 
 function coverage_stop {
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
+	#Clear all collected coverage binary results
+        ssh root@node-$gen_ctrl "rm -rf /coverage/report/$1"
 	ssh root@node-$gen_ctrl "mkdir -p /coverage/report/$1"
 	mkdir -p /tmp/coverage/report/$1/
 	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
@@ -199,8 +201,6 @@ function coverage_stop {
 	rm -rf /tmp/coverage
 	ssh root@node-$gen_ctrl "cd /coverage/report/$1/; coverage combine; coverage report --omit=/usr/lib/python2.7/dist-packages/$1/openstack/* -m >> report_$1"
 	scp root@node-$gen_ctrl:/coverage/report/$1/report_$1 ~/report_$1
-#Clear all collected coverage binary results
-	ssh root@node-$gen_ctrl "rm -rf /coverage/report/$1"
 	
 }
 
