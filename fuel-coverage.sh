@@ -197,8 +197,9 @@ function coverage_stop {
 
 	scp /tmp/coverage/report/$1/.coverage* root@node-$gen_ctrl:/coverage/report/$1/
 	rm -rf /tmp/coverage
-	ssh root@node-$gen_ctrl "cd /coverage/report/$1/; coverage combine; coverage report --omit=/usr/lib/python2.7/dist-packages/${i}/openstack/* -m >> report_$1"
+	ssh root@node-$gen_ctrl "cd /coverage/report/$1/; coverage combine; coverage report --omit=/usr/lib/python2.7/dist-packages/$1/openstack/* -m >> report_$1"
 	scp root@node-$gen_ctrl:/coverage/report/$1/report_$1 ~/report_$1
+#Clear all collected coverage binary results
 	ssh root@node-$gen_ctrl "rm -rf /coverage/report/$1"
 	
 }
