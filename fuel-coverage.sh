@@ -19,32 +19,32 @@ EOF
 }
 
 function remote_neutron_compute_start_ubuntu {
-	ssh root@node-$1 'rm -rf "/coverage/neutron";mkdir -p "/coverage/neutron";service neutron-plugin-openvswitch-agent stop > /dev/null 2>&1; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron" > /coverage/rc/.coveragerc-neutron;cd /coverage/neutron;/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-openvswitch-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/ovs-agent.log > /dev/null 2>&1 &'
+	ssh root@node-$1 'service neutron-plugin-openvswitch-agent stop; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron" > /coverage/rc/.coveragerc-neutron;cd /coverage/neutron; screen -S neutron-plugin-openvswitch-agent -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-openvswitch-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/ovs-agent.log'
 }
 
 function remote_neutron_compute_stop_ubuntu {
-	ssh root@node-$1 'kill $(ps hf -C coverage | grep "neutron-openvswitch-agent" | awk "{print \$1;exit}");service neutron-plugin-openvswitch-agent start > /dev/null 2>&1'
+	ssh root@node-$1 'kill $(ps hf -C python | grep "neutron-openvswitch-agent" | awk "{print \$1;exit}");service neutron-plugin-openvswitch-agent start'
 }
 
 function remote_neutron_controller_start_ubuntu {
-	ssh root@node-$1 'for i in p_neutron-plugin-openvswitch-agent p_neutron-dhcp-agent p_neutron-plugin-openvswitch-agent p_neutron-metadata-agent p_neutron-l3-agent; do pcs resource ban ${i} > /dev/null 2>&1; done;service neutron-server stop > /dev/null 2>&1;service neutron-openvswitch-agent stop > /dev/null 2>&1;rm -rf "/coverage/neutron";mkdir -p "/coverage/neutron";echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron" > /coverage/rc/.coveragerc-neutron;cd /coverage/neutron;/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-openvswitch-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/openvswitch-agent.log > /dev/null 2>&1 & /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-server --config-file /etc/neutron/neutron.conf --log-file /var/log/neutron/server.log --config-file /etc/neutron/plugin.ini > /dev/null 2>&1 & for i in dhcp l3 metadata; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-${i}-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/${i}_agent.ini --log-file=/var/log/neutron/${i}-agent.log > /dev/null 2>&1 & done'
+	ssh root@node-$1 'for i in p_neutron-plugin-openvswitch-agent p_neutron-dhcp-agent p_neutron-plugin-openvswitch-agent p_neutron-metadata-agent p_neutron-l3-agent; do pcs resource ban ${i};done;service neutron-server stop;service neutron-openvswitch-agent stop;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron" > /coverage/rc/.coveragerc-neutron;cd /coverage/neutron; screen -S neutron-openvswitch-agent -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-openvswitch-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/openvswitch-agent.log;screen -S neutron-server -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-server --config-file /etc/neutron/neutron.conf --log-file /var/log/neutron/server.log --config-file /etc/neutron/plugin.ini; for i in dhcp l3 metadata; do screen -S neutron-${i}-agent -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-${i}-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/${i}_agent.ini --log-file=/var/log/neutron/${i}-agent.log;done'
 }
 
 
 function remote_neutron_controller_stop_ubuntu {
-	ssh root@node-$1 'for i in neutron-server neutron-openvswitch-agent neutron-dhcp-agent neutron-l3-agent neutron-metadata-agent; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in p_neutron-plugin-openvswitch-agent p_neutron-dhcp-agent p_neutron-plugin-openvswitch-agent p_neutron-metadata-agent p_neutron-l3-agent; do pcs resource clear ${i} > /dev/null 2>&1;done;service neutron-server start > /dev/null 2>&1'
+	ssh root@node-$1 'for i in neutron-server neutron-openvswitch-agent neutron-dhcp-agent neutron-l3-agent neutron-metadata-agent; do kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");done;for i in p_neutron-plugin-openvswitch-agent p_neutron-dhcp-agent p_neutron-plugin-openvswitch-agent p_neutron-metadata-agent p_neutron-l3-agent; do pcs resource clear ${i};done;service neutron-server start'
 }
 
 function remote_nova_compute_start_ubuntu {
-	ssh root@node-$1 'service nova-compute stop > /dev/null 2>&1;rm -rf "/coverage/nova";mkdir -p "/coverage/nova";echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova ;cd /coverage/nova;/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-compute --config-file=/etc/nova/nova.conf --config-file=/etc/nova/nova-compute.conf > /dev/null 2>&1 &'
+	ssh root@node-$1 'service nova-compute stop;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova;cd /coverage/nova;screen -S nova-compute -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/nova-compute --config-file=/etc/nova/nova.conf --config-file=/etc/nova/nova-compute.conf'
 }
 
 function remote_nova_compute_stop_ubuntu {
-	ssh root@node-$1 'kill $(ps hf -C coverage | grep "nova-compute" | awk "{print \$1;exit}");service nova-compute start > /dev/null 2>&1'
+	ssh root@node-$1 'kill $(ps hf -C python | grep "nova-compute" | awk "{print \$1;exit}");service nova-compute start'
 }
 
 function remote_nova_controller_start_ubuntu {
-	ssh root@node-$1 'for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do service ${i} stop > /dev/null 2>&1; done; rm -rf "/coverage/nova";mkdir -p "/coverage/nova";echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova;cd /coverage/nova;for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/$i --config-file=/etc/nova/nova.conf > /dev/null 2>&1 & done'
+	ssh root@node-$1 'for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do service ${i} stop;done;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova;cd /coverage/nova;for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do screen -S ${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/${i} --config-file=/etc/nova/nova.conf;done'
 }
 
 function remote_nova_controller_stop_ubuntu {
@@ -52,11 +52,11 @@ function remote_nova_controller_stop_ubuntu {
 }
 
 function remote_heat_controller_start_ubuntu {
-	ssh root@node-$1 'for i in heat-api-cfn heat-api-cloudwatch heat-api; do service ${i} stop; done; pcs resource ban p_heat-engine > /dev/null 2>&1;rm -rf "/coverage/heat"; mkdir -p "/coverage/heat"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=heat\r\n" >> /coverage/rc/.coveragerc-heat; cd "/coverage/heat";for i in heat-api-cfn heat-engine heat-api-cloudwatch heat-api; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-heat /usr/bin/${i} >/dev/null 2>&1 & done'
+	ssh root@node-$1 'for i in heat-api-cfn heat-api-cloudwatch heat-api; do service ${i} stop; done; pcs resource ban p_heat-engine;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=heat\r\n" >> /coverage/rc/.coveragerc-heat; cd "/coverage/heat";for i in heat-api-cfn heat-engine heat-api-cloudwatch heat-api; do screen -S ${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-heat /usr/bin/${i};done'
 }
 
 function remote_heat_controller_stop_ubuntu {
-	ssh root@node-$1 'for i in heat-api-cfn heat-engine heat-api-cloudwatch heat-api; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in heat-api-cfn heat-api-cloudwatch heat-api; do service ${i} start; done; pcs resource clear p_heat-engine > /dev/null 2>&1'
+	ssh root@node-$1 'for i in heat-api-cfn heat-engine heat-api-cloudwatch heat-api; do kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");done; for i in heat-api-cfn heat-api-cloudwatch heat-api; do service ${i} start; done; pcs resource clear p_heat-engine;'
 }
 
 function remote_heat_compute_start_ubuntu {
@@ -67,13 +67,12 @@ function remote_heat_compute_stop_ubuntu {
 	echo "Skiped node-$1 (compute without heat)"
 }
 
-##########
 function remote_murano_controller_start_ubuntu {
-        ssh root@node-$1 'for i in murano-api murano-engine; do service openstack-${i} stop; done;rm -rf "/coverage/murano"; mkdir -p "/coverage/murano"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=murano\r\n" >> /coverage/rc/.coveragerc-murano; cd "/coverage/murano";for i in murano-api murano-engine; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-murano /usr/bin/${i} --config-file=/etc/murano/murano.conf >/dev/null 2>&1 & done'
+        ssh root@node-$1 'for i in murano-api murano-engine;do service openstack-${i} stop;done;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=murano\r\n" >> /coverage/rc/.coveragerc-murano; cd "/coverage/murano";for i in murano-api murano-engine; do screen -S ${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-murano /usr/bin/${i} --config-file=/etc/murano/murano.conf;done'
 }
 
 function remote_murano_controller_stop_ubuntu {
-        ssh root@node-$1 'for i in murano-api murano-engine; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in murano-api murano-engine; do service openstack-${i} start; done'
+        ssh root@node-$1 'for i in murano-api murano-engine; do kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");done; for i in murano-api murano-engine; do service openstack-${i} start; done'
 }
 
 function remote_murano_compute_start_ubuntu {
@@ -84,14 +83,12 @@ function remote_murano_compute_stop_ubuntu {
         echo "Skiped node-$1 (compute without murano)"
 }
 
-##########
-
 function remote_keystone_controller_start_ubuntu {
-        ssh root@node-$1 'service keystone stop;rm -rf "/coverage/keystone"; mkdir -p "/coverage/keystone"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=keystone\r\n" >> /coverage/rc/.coveragerc-keystone; cd "/coverage/keystone";/usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-keystone /usr/bin/keystone-all >/dev/null 2>&1 &'
+        ssh root@node-$1 'service keystone stop;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=keystone\r\n" >> /coverage/rc/.coveragerc-keystone; cd "/coverage/keystone";screen -S keystone-all -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-keystone /usr/bin/keystone-all'
 }
 
 function remote_keystone_controller_stop_ubuntu {
-        ssh root@node-$1 'kill $(ps hf -C coverage | grep "keystone-all" | awk "{print \$1;exit}");service keystone start'
+        ssh root@node-$1 'kill $(ps hf -C python | grep "keystone-all" | awk "{print \$1;exit}");service keystone start'
 }
 
 function remote_keystone_compute_start_ubuntu {
@@ -102,15 +99,12 @@ function remote_keystone_compute_stop_ubuntu {
         echo "Skiped node-$1 (compute without keystone)"
 }
 
-
-##########
-
 function remote_glance_controller_start_ubuntu {
-        ssh root@node-$1 'for i in glance-api glance-registry; do service ${i} stop; done;rm -rf "/coverage/glance"; mkdir -p "/coverage/glance"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=glance\r\n" >> /coverage/rc/.coveragerc-glance; cd "/coverage/glance";for i in glance-api glance-registry; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-glance /usr/bin/${i} >/dev/null 2>&1 & done'
+        ssh root@node-$1 'for i in glance-api glance-registry; do service ${i} stop;done;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=glance\r\n" >> /coverage/rc/.coveragerc-glance; cd "/coverage/glance";for i in glance-api glance-registry; do screen -S ${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-glance /usr/bin/${i};done'
 }
 
 function remote_glance_controller_stop_ubuntu {
-        ssh root@node-$1 'for i in glance-api glance-registry; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in glance-api glance-registry; do service ${i} start; done'
+        ssh root@node-$1 'for i in glance-api glance-registry; do kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");done; for i in glance-api glance-registry; do service ${i} start; done'
 }
 
 function remote_glance_compute_start_ubuntu {
@@ -121,14 +115,12 @@ function remote_glance_compute_stop_ubuntu {
         echo "Skiped node-$1 (compute without glance)"
 }
 
-##########
-
 function remote_cinder_controller_start_ubuntu {
-        ssh root@node-$1 'for i in cinder-api cinder-scheduler; do service ${i} stop; done;rm -rf "/coverage/cinder"; mkdir -p "/coverage/cinder"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=cinder\r\n" >> /coverage/rc/.coveragerc-cinder; cd "/coverage/cinder";for i in cinder-api cinder-scheduler; do /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-cinder /usr/bin/${i} --config-file=/etc/cinder/cinder.conf --log-file=/var/log/cinder/${i}.log >/dev/null 2>&1 & done'
+        ssh root@node-$1 'for i in cinder-api cinder-scheduler; do service ${i} stop;done;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=cinder\r\n" >> /coverage/rc/.coveragerc-cinder; cd "/coverage/cinder";for i in cinder-api cinder-scheduler; do screen -S ${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-cinder /usr/bin/${i} --config-file=/etc/cinder/cinder.conf --log-file=/var/log/cinder/${i}.log;done'
 }
 
 function remote_cinder_controller_stop_ubuntu {
-        ssh root@node-$1 'for i in cinder-api cinder-scheduler; do kill $(ps hf -C coverage | grep "${i}" | awk "{print \$1;exit}");done; for i in cinder-api cinder-scheduler; do service ${i} start; done'
+        ssh root@node-$1 'for i in cinder-api cinder-scheduler; do kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");done; for i in cinder-api cinder-scheduler; do service ${i} start; done'
 }
 
 function remote_cinder_compute_start_ubuntu {
@@ -142,7 +134,7 @@ function remote_cinder_compute_stop_ubuntu {
 ##########
 
 function remote_swift_controller_start_ubuntu {
-        ssh root@node-$1 'for i in swift-account-reaper swift-account swift-account-auditor swift-account-replicator swift-container-replicator swift-container-auditor swift-object-auditor swift-container-sync swift-container swift-proxy swift-object swift-object-replicator swift-container-updater;do service ${i} stop;done;rm -rf "/coverage/swift"; mkdir -p "/coverage/swift"; echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=swift\r\n" >> /coverage/rc/.coveragerc-swift; cd "/coverage/swift"; for i in account-reaper account-server account-auditor account-replicator container-replicator container-auditor object-auditor container-sync container-server proxy-server object-server object-replicator container-updater; do screen -S swift-${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-swift /usr/bin/swift-${i} --config-file /etc/swift/${i%-*}-server.conf;done'
+        ssh root@node-$1 'for i in swift-account-reaper swift-account swift-account-auditor swift-account-replicator swift-container-replicator swift-container-auditor swift-object-auditor swift-container-sync swift-container swift-proxy swift-object swift-object-replicator swift-container-updater;do service ${i} stop;done;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=swift\r\n" >> /coverage/rc/.coveragerc-swift; cd "/coverage/swift"; for i in account-reaper account-server account-auditor account-replicator container-replicator container-auditor object-auditor container-sync container-server proxy-server object-server object-replicator container-updater; do screen -S swift-${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-swift /usr/bin/swift-${i} --config-file /etc/swift/${i%-*}-server.conf;done'
 }
 
 function remote_swift_controller_stop_ubuntu {
@@ -157,10 +149,8 @@ function remote_swift_compute_stop_ubuntu {
         echo "Skiped node-$1 (compute without swift)"
 }
 
-##########
-
 function remote_sahara_controller_start_ubuntu {
-        ssh root@node-$1 'service sahara-all stop;rm -rf "/coverage/sahara"; mkdir -p "/coverage/sahara"; echo -e "[run]\r\nomit=\r\n  */openstack/common/*\r\n  .tox/*\r\n  *sahara/tests/*\r\n *sahara/plugins/vanilla/v1_2_1/*\r\n *sahara/plugins/vanilla/v2_3_0/*\r\n *sahara/plugins/storm/*\r\ndata_file=.coverage\r\nparallel=True\r\nsource=sahara\r\n" >> /coverage/rc/.coveragerc-sahara; cd "/coverage/sahara";screen -S sahara-all -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-sahara /usr/bin/sahara-all --config-file /etc/sahara/sahara.conf'
+        ssh root@node-$1 'service sahara-all stop;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=sahara\r\n" >> /coverage/rc/.coveragerc-sahara; cd "/coverage/sahara";screen -S sahara-all -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-sahara /usr/bin/sahara-all --config-file /etc/sahara/sahara.conf'
 }
 
 function remote_sahara_controller_stop_ubuntu {
@@ -175,8 +165,6 @@ function remote_sahara_compute_stop_ubuntu {
         echo "Skiped node-$1 (compute without sahara)"
 }
 
-
-
 function coverage_stop {
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
 	#Clear all collected coverage binary results
@@ -186,14 +174,14 @@ function coverage_stop {
 	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
 	do
 		eval "remote_$1_compute_stop_ubuntu $id"
-		sleep 25
+		sleep 20
         	scp root@node-$id:/coverage/$1/.coverage* /tmp/coverage/report/$1/
 	done
 
 	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
 	do
                 eval "remote_$1_controller_stop_ubuntu $id"
-		sleep 10
+		sleep 20
                 scp root@node-$id:/coverage/$1/.coverage* /tmp/coverage/report/$1/
 	done
 
@@ -207,6 +195,7 @@ function coverage_stop {
 function coverage_start {
 	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
 	do
+		ssh root@node-$1 "rm -rf /coverage/$1; mkdir -p /coverage/$1"
 		eval "remote_$1_compute_start_ubuntu $id"
 	done
 
