@@ -11,10 +11,10 @@ function coverage_init {
 	for id in $(fuel nodes | grep -e '[0-9]' | awk ' {print $1} ')
         do
 		ssh root@node-$id """
-		if [[ -f "/etc/centos-release" ]];
-		then;
+		if [[ -f "/etc/centos-release" ]]
+		then
 			yum install -y python-pip python-devel gcc;
-		else;
+		else
 			apt-get update;
 			apt-get install -y --force-yes python-pip python-dev gcc;
 		fi;
@@ -24,6 +24,7 @@ function coverage_init {
 		chmod 777 $coverage_dir;
 		"""
 	done
+}
 
 function coverage_start {
 	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
@@ -59,10 +60,23 @@ function coverage_stop {
 
 	scp /tmp/coverage/report/$1/.coverage* root@node-$gen_ctrl:$coverage_dir/report/$1/
 	rm -rf /tmp/coverage
-	ssh root@node-$gen_ctrl "cd $coverage_dir/report/$1/; coverage combine; coverage report --omit=$(python -c 'import os; from $1 import openstack; print os.path.dirname(os.path.abspath(openstack.__file__))')/* -m >> report_$1"
+	ssh root@node-$gen_ctrl """
+		cd $coverage_dir/report/$1/;
+		coverage combine;
+		coverage report --omit=$(python -c 'import os; from $1 import openstack; print os.path.dirname(os.path.abspath(openstack.__file__))')/* -m >> report_$1"
 	scp root@node-$gen_ctrl:$coverage_dir/report/$1/report_$1 ~/report_$1_$(date +"%d-%m-%Y_%T")
 }
 
 function nova_controller_start {
-	ssh root@node-$1 'for i in api novncproxy objectstore consoleauth scheduler conductor cert; do service nova-${i} stop;done;echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova;cd /coverage/nova;for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert; do screen -S ${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/${i} --config-file=/etc/nova/nova.conf;done'
+	ssh root@node-$1 """
+	for i in api novncproxy objectstore consoleauth scheduler conductor cert; 
+		do service nova-${i} stop;
+	done;
+	echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova;
+	cd /coverage/nova;
+	for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert;
+		do screen -S ${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/${i} --config-file=/etc/nova/nova.conf;
+	done'
 }
+
+coverage_init
