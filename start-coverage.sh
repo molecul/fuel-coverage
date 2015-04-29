@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova"
+components_enable="nova neutron"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -151,6 +151,37 @@ function nova_compute_stop {
                                         service nova-${i} start;
                                 fi;
                 done;
+        '''
+}
+
+function neutron_controller_start {
+        ssh root@node-$1 '''
+	for i in p_neutron-dhcp-agent p_neutron-metadata-agent p_neutron-l3-agent; 
+		do pcs resource disable ${i};
+		done;	
+	if [[ -f "/etc/centos-release" ]]
+		then
+			pcs resource disable p_neutron-openvswitch-agent;
+                else
+              		pcs resource disable p_neutron-plugin-openvswitch-agent;
+        	fi;
+
+        for i in server; 
+   		do service neutron-$i stop;
+                done;
+        echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron\r\n" > /coverage/rc/.coveragerc-neutron;
+        cd /coverage/neutron;
+
+        if [[ -f "/etc/centos-release" ]]
+                        then
+                                screen -S neutron-server -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-server) --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini --log-file /var/log/neutron/server.log;
+                        else
+                                screen -S neutron-server -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-server) --config-file /etc/neutron/neutron.conf --log-file /var/log/neutron/server.log --config-file /etc/neutron/plugin.ini;
+			fi;
+        screen -S neutron-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/openvswitch-agent.log;
+		
+
+	for i in dhcp l3 metadata; do screen -S neutron-${i}-agent -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-${i}-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/${i}_agent.ini --log-file=/var/log/neutron/${i}-agent.log;done
         '''
 }
 
