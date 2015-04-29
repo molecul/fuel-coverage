@@ -44,8 +44,8 @@ function coverage_stop {
 	mkdir -p /tmp/coverage/report/$2/
 	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
 	do
-		#eval "${1}_compute_stop $id"
-		#sleep $coverage_sleep
+		eval "${1}_compute_stop $id"
+		sleep $coverage_sleep
         	scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
 	done
 
@@ -114,5 +114,67 @@ function nova_controller_stop {
 	'''
 }
 
+function nova_compute_start {
+        ssh root@node-$1 '''
+        for i in compute; 
+                do if [[ -f "/etc/centos-release" ]]
+                        then
+                                service openstack-nova-$i stop;
+                        else
+                                service nova-$i stop;
+                        fi;
+                done;
+        echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" > /coverage/rc/.coveragerc-nova;
+        cd /coverage/nova;
+        if [[ -f "/etc/centos-release" ]]
+                        then
+                                screen -S nova-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-compute) --logfile /var/log/nova/compute.log;
+                        else
+                                screen -S nova-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-compute) --config-file=/etc/nova/nova-compute.conf;
+                        fi;
+        '''
+}
 
-coverage_$1 $2
+function nova_compute_stop {
+        ssh root@node-$1 '''
+                for i in compute;
+                        do 
+                                echo "nova-${i}";
+                                kill $(ps hf -C python | grep "nova-${i}" | awk "{print \$1;exit}");
+                done;
+                for i in compute;
+                        do if [[ -f "/etc/centos-release" ]]
+                                then
+                                        service openstack-nova-${i} start;
+                                else
+                                        service nova-${i} start;
+                                fi;
+                done;
+        '''
+}
+
+case $1 in
+     init)
+	coverage_$1
+         ;;
+     start)
+	coverage_$1 $2
+         ;;
+     stop)
+	coverage_$1 $2
+        ;;
+     help)
+	echo """
+		Usage: $0 <command> <component>
+			<command>
+				init   - Initialize coverage framework 
+				start  - Start counting coverage
+				stop   - Stop counting coverage and generate report
+			<component>
+				List of supported components: $components_enable
+	     """
+	;; 
+      *)
+	echo -e "Invalid command.\r\nType $0 to get help."
+	exit
+esac
