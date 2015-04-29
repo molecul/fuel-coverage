@@ -63,20 +63,39 @@ function coverage_stop {
 	ssh root@node-$gen_ctrl """
 		cd $coverage_dir/report/$1/;
 		coverage combine;
-		coverage report --omit=$(python -c 'import os; from $1 import openstack; print os.path.dirname(os.path.abspath(openstack.__file__))')/* -m >> report_$1"
+		coverage report --omit=$(python -c 'import os; from $1 import openstack; print os.path.dirname(os.path.abspath(openstack.__file__))')/* -m >> report_$1
+		"""
 	scp root@node-$gen_ctrl:$coverage_dir/report/$1/report_$1 ~/report_$1_$(date +"%d-%m-%Y_%T")
+	
 }
 
 function nova_controller_start {
 	ssh root@node-$1 """
 	for i in api novncproxy objectstore consoleauth scheduler conductor cert; 
-		do service nova-${i} stop;
-	done;
-	echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" >> /coverage/rc/.coveragerc-nova;
+		do if [[ -f '/etc/centos-release' ]]
+			then
+				service openstack-nova-${i} stop;
+			else
+				service nova-${i} stop;
+			fi;
+		done;
+	echo -e '[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n\' >> $coverage_dir/rc/.coveragerc-nova;
 	cd /coverage/nova;
-	for i in nova-api nova-novncproxy nova-objectstore nova-consoleauth nova-scheduler nova-conductor nova-cert;
-		do screen -S ${i} -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-nova /usr/bin/${i} --config-file=/etc/nova/nova.conf;
-	done'
+	if [[ -f '/etc/centos-release' ]]
+                        then
+                               	screen -S novncproxy -d -m $(which python) $(which coverage) run --rcfile $coverage_dir/rc/.coveragerc-nova $(which openstack-nova-novncproxy) --web /usr/share/novnc/;
+                        else
+                                screen -S novncproxy -d -m $(which python) $(which coverage) run --rcfile $coverage_dir/rc/.coveragerc-nova $(which nova-novncproxy) --config-file=/etc/nova/nova.conf;
+                        fi;
+	for i in api objectstore consoleauth scheduler conductor cert;
+		do if [[ -f '/etc/centos-release' ]]
+			then
+				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile $coverage_dir/rc/.coveragerc-nova $(which openstack-nova-${i}) --logfile /var/log/nova/${i}.log;
+			else
+				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile $coverage_dir/rc/.coveragerc-nova $(which nova-${i}) --config-file=/etc/nova/nova.conf;
+			fi;
+		done;
+	"""
 }
 
 coverage_init
