@@ -81,14 +81,14 @@ function nova_controller_start {
 	cd /coverage/nova;
 	if [[ -f "/etc/centos-release" ]]
                         then
-                               	screen -S novncproxy -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which openstack-nova-novncproxy) --web /usr/share/novnc/;
+                               	screen -S novncproxy -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-novncproxy) --web /usr/share/novnc/;
                         else
                                 screen -S novncproxy -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-novncproxy) --config-file=/etc/nova/nova.conf;
                         fi;
 	for i in api objectstore consoleauth scheduler conductor cert;
 		do if [[ -f "/etc/centos-release" ]]
 			then
-				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which openstack-nova-${i}) --logfile /var/log/nova/${i}.log;
+				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-${i}) --logfile /var/log/nova/${i}.log;
 			else
 				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-${i}) --config-file=/etc/nova/nova.conf;
 			fi;
