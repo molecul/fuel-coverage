@@ -6,6 +6,7 @@ components_enable="nova"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
+	echo "LogLevel=quiet" >> ~/.ssh/config
 	for id in $(fuel nodes | grep -e '[0-9]' | awk ' {print $1} ')
         do
 		ssh root@node-$id """
@@ -28,7 +29,7 @@ function coverage_start {
 	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
 	do
 		ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
-		#eval "${1}_compute_start $id"
+		eval "${1}_compute_start $id"
 	done
 
 	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
