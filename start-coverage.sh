@@ -182,7 +182,7 @@ function neutron_controller_start {
 		
 
 	for i in dhcp l3 metadata;
-		do screen -S neutron-${i}-agent -d -m $(which python) ($which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-${i}-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/${i}_agent.ini --log-file=/var/log/neutron/${i}-agent.log;
+		do screen -S neutron-${i}-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-${i}-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/${i}_agent.ini --log-file=/var/log/neutron/${i}-agent.log;
 	done;
         '''
 }
