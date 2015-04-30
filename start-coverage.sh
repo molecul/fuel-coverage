@@ -185,6 +185,65 @@ function neutron_controller_start {
         '''
 }
 
+function neutron_controller_stop {
+        ssh root@node-$1 '''
+                for i in neutron-server openvswitch-agent dhcp-agent l3-agent metadata-agent;
+                        do 
+                                echo "${i}";
+                                kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
+                done;
+                for i in dhcp-agent metadata-agent l3-agent;
+			do pcs resource enable p_neutron_${i};
+		done;
+                        do if [[ -f "/etc/centos-release" ]]
+                                then
+                                        pcs resource enable p_neutron_openvswitch-agent;
+                                else
+                                        pcs resource enable p_neutron_plugin-openvswitch-agent;
+                                fi;
+                done;
+		service neutron-server start;
+        '''
+}
+
+function neutron_compute_start {
+        ssh root@node-$1 '''
+        for i in openvswitch-agent; 
+                do if [[ -f "/etc/centos-release" ]]
+                        then
+                                service neutron-plugin-${i} stop;
+                        else
+                                service neutron-${i} stop;
+                        fi;
+                done;
+        echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron\r\n" > /coverage/rc/.coveragerc-neutron;
+        cd /coverage/neutron;
+        if [[ -f "/etc/centos-release" ]]
+                        then
+                                screen -S neutron-plugin-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --log-file /var/log/neutron/openvswitch-agent.log --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini;
+                        else
+				screen -S neutron-plugin-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-plugin-openvswitch-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/ovs-agent.log;
+                        fi;
+        '''
+}
+
+function nova_compute_stop {
+        ssh root@node-$1 '''
+                for i in openvswitch-agent;
+                        do if [[ -f "/etc/centos-release" ]]
+                                then
+					echo "neutron-${i}";
+					kill $(ps hf -C python | grep "neutron-${i}" | awk "{print \$1;exit}");
+                                        service neutron-${i} start;
+                                else
+					echo "neutron-plugin-${i}";
+                                        kill $(ps hf -C python | grep "neutron-plugin-${i}" | awk "{print \$1;exit}");
+                                        service neutron-plugin-${i} start;
+                                fi;
+                done;
+        '''
+}
+
 case $1 in
      init)
 	coverage_$1
