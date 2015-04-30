@@ -195,13 +195,12 @@ function neutron_controller_stop {
                 for i in dhcp-agent metadata-agent l3-agent;
 			do pcs resource enable p_neutron_${i};
 		done;
-                        do if [[ -f "/etc/centos-release" ]]
+               	if [[ -f "/etc/centos-release" ]]
                                 then
                                         pcs resource enable p_neutron_openvswitch-agent;
                                 else
                                         pcs resource enable p_neutron_plugin-openvswitch-agent;
                                 fi;
-                done;
 		service neutron-server start;
         '''
 }
