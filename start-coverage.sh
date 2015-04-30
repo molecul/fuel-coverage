@@ -227,7 +227,7 @@ function neutron_compute_start {
         '''
 }
 
-function nova_compute_stop {
+function neutron_compute_stop {
         ssh root@node-$1 '''
                 for i in openvswitch-agent;
                         do if [[ -f "/etc/centos-release" ]]
