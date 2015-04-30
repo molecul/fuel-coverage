@@ -181,7 +181,9 @@ function neutron_controller_start {
         screen -S neutron-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/openvswitch-agent.log;
 		
 
-	for i in dhcp l3 metadata; do screen -S neutron-${i}-agent -d -m /usr/bin/python /usr/local/bin/coverage run --rcfile /coverage/rc/.coveragerc-neutron /usr/bin/neutron-${i}-agent --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/${i}_agent.ini --log-file=/var/log/neutron/${i}-agent.log;done
+	for i in dhcp l3 metadata;
+		do screen -S neutron-${i}-agent -d -m $(which python) ($which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-${i}-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/${i}_agent.ini --log-file=/var/log/neutron/${i}-agent.log;
+	done;
         '''
 }
 
