@@ -211,9 +211,9 @@ function neutron_compute_start {
         for i in openvswitch-agent; 
                 do if [[ -f "/etc/centos-release" ]]
                         then
-                                service neutron-plugin-${i} stop;
-                        else
                                 service neutron-${i} stop;
+                        else
+                                service neutron-plugin-${i} stop;
                         fi;
                 done;
         echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron\r\n" > /coverage/rc/.coveragerc-neutron;
