@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron heat murano"
+components_enable="nova neutron heat murano keystone"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -267,9 +267,9 @@ function heat_controller_start {
 			do
 				if [[ -f "/etc/centos-release" ]]
 				then 
-					screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-heat /usr/bin/${i} --config-file /etc/heat/heat.conf;
+					screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-heat $(which ${i}) --config-file /etc/heat/heat.conf;
 				else
-					screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-heat /usr/bin/${i};
+					screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-heat $(which ${i});
 				fi;
 			done;
 			'''
@@ -305,6 +305,40 @@ function heat_compute_stop {
 	true
 }
 
+function keystone_controller_start {
+	ssh root@node-$1 '''
+		if [[ -f "/etc/centos-release" ]]
+		then
+			service openstack-keystone stop;
+		else
+			service keystone stop;
+		fi;
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=keystone\r\n" >> /coverage/rc/.coveragerc-keystone;
+		cd "/coverage/keystone";
+		screen -S keystone-all -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-keystone $(which keystone-all);
+	'''
+}
+
+function keystone_controller_stop {
+	ssh root@node-$1 '''
+		kill $(ps hf -C python | grep "keystone-all" | awk "{print \$1;exit}");
+		if [[ -f "/etc/centos-release" ]]
+		then
+			service openstack-keystone start;
+		else
+			service keystone start;
+		fi;
+	'''
+}
+
+function keystone_compute_start {
+	true
+}
+
+function keystone_compute_stop {
+	true
+}
+
 function murano_controller_start {
 	ssh root@node-$1 '''
 		for i in murano-api murano-engine;
@@ -317,7 +351,7 @@ function murano_controller_start {
 		
 		for i in murano-api murano-engine;
 			do
-				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-murano /usr/bin/${i} --config-file=/etc/murano/murano.conf;
+				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-murano $(which ${i}) --config-file=/etc/murano/murano.conf;
 			done;
 	'''
 }
