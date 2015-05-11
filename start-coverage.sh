@@ -245,6 +245,70 @@ function neutron_compute_stop {
         '''
 }
 
+function heat_controller_start {
+	ssh root@node-$1 '''
+		for i in heat-api-cfn heat-api-cloudwatch heat-api; 
+			do if [[ -f "/etc/centos-release" ]]
+				then
+					service openstack-${i} stop;
+				else
+					service ${i} stop;
+				fi;
+		done;
+		if [[ -f "/etc/centos-release" ]]
+		then
+			pcs resource disable p_openstack-heat-engine;
+		else
+			pcs resource disable p_heat-engine;
+		fi;
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=heat\r\n" >> /coverage/rc/.coveragerc-heat; 
+		cd "/coverage/heat";
+		for i in heat-api-cfn heat-engine heat-api-cloudwatch heat-api;
+			do
+				if [[ -f "/etc/centos-release" ]]
+				then 
+					screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-heat /usr/bin/${i} --config-file /etc/heat/heat.conf;
+				else
+					screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-heat /usr/bin/${i};
+				fi;
+			done;
+			'''
+}
+
+fucntion heat_controller_stop {
+	ssh root@node-$1 '''
+		for i in heat-api-cfn heat-engine heat-api-cloudwatch heat-api; 
+			do kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
+		done;
+		for i in heat-api-cfn heat-api-cloudwatch heat-api;
+			if [[ -f "/etc/centos-release" ]]
+			then
+				do service openstack-${i} start;
+			else
+				do service ${i} start;
+			fi;
+		done;
+		if [[ -f "/etc/centos-release" ]]
+		then
+			pcs resource enable p_openstack-heat-engine;
+		else
+			pcs resource enable p_heat-engine;
+		fi;
+	'''
+}
+
+function heat_compute_start {
+	ssh root@node-$1 '''
+		true
+	'''
+}
+
+function heat_compute_stop {
+	ssh root@node-$1 '''
+		true
+	'''
+}
+
 case $1 in
      init)
 	coverage_$1
