@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron heat murano keystone"
+components_enable="nova neutron heat murano keystone glance"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -376,6 +376,53 @@ function murano_compute_start {
 function murano_compute_stop {
 	true
 }
+
+function glance_controller_start {
+	ssh root@node-$1 '''
+		for i in glance-api glance-registry;
+			do
+				if [[ -f "/etc/centos-release" ]]
+				then
+					service openstack-${i} stop;
+				else
+					service ${i} stop;
+				fi;
+			done;
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=glance\r\n" >> /coverage/rc/.coveragerc-glance;
+		cd "/coverage/glance";
+		for i in glance-api glance-registry;
+			do 
+				screen -S ${i} -d -m  $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-glance $(which ${i});
+		done;
+	'''
+}
+
+function glance_controller_stop {
+	ssh root@node-$1 '''
+		for i in glance-api glance-registry;
+			do
+				kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
+			done;
+		for i in glance-api glance-registry;
+			do 
+                                if [[ -f "/etc/centos-release" ]]
+                                then
+                                        service openstack-${i} start;
+                                else
+                                        service ${i} start;
+                                fi;
+			done;
+	'''
+}
+
+function glance_compute_start {
+	true
+}
+
+function glance_compute_stop {
+	true
+}
+
 
 case $1 in
      init)
