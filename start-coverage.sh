@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron"
+components_enable="nova neutron heat murano"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -298,15 +298,49 @@ fucntion heat_controller_stop {
 }
 
 function heat_compute_start {
-	ssh root@node-$1 '''
-		true
-	'''
+	true
 }
 
 function heat_compute_stop {
+	true
+}
+
+function murano_controller_start {
 	ssh root@node-$1 '''
-		true
+		for i in murano-api murano-engine;
+			do 
+				service openstack-${i} stop;
+			done;
+		
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=murano\r\n" >> /coverage/rc/.coveragerc-murano;
+		cd "/coverage/murano";
+		
+		for i in murano-api murano-engine;
+			do
+				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-murano /usr/bin/${i} --config-file=/etc/murano/murano.conf;
+			done;
 	'''
+}
+
+function murano_controller_stop {
+	ssh root@node-$1 '''
+		for i in murano-api murano-engine;
+			do
+				kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
+			done;
+		for i in murano-api murano-engine;
+			do 
+				service openstack-${i} start;
+			done;
+	'''
+}
+
+function murano_compute_start {
+	true
+}
+
+function murano_compute_stop {
+	true
 }
 
 case $1 in
