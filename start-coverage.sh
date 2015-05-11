@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer"
+components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer swift"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -554,6 +554,22 @@ function ceilometer_compute_stop {
 		kill $(ps hf -C python | grep "ceilometer-agent-compute" | awk "{print \$1;exit}");
 		service openstack-ceilometer-compute start;
 	'''
+}
+
+function swift_controller_start {
+	true
+}
+
+function swift_controller_stop {
+	true
+}
+
+function swift_compute_start {
+	true
+}
+
+function swift_compute_stop {
+	true
 }
 
 case $1 in
