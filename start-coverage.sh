@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron heat murano keystone glance"
+components_enable="nova neutron heat murano keystone glance cinder"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -423,6 +423,58 @@ function glance_compute_stop {
 	true
 }
 
+function cinder_controller_start {
+	ssh root@node-$1 '''
+		for i in cinder-api cinder-scheduler cinder-backup cinder-volume;
+                        do
+                                if [[ -f "/etc/centos-release" ]]
+                                then
+                                        service openstack-${i} stop;
+                                else
+                                        service ${i} stop;
+                                fi;
+                        done;
+
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=cinder\r\n" >> /coverage/rc/.coveragerc-cinder;
+		cd "/coverage/cinder";
+		for i in api scheduler backup volume;
+			do
+				if [[ -f "/etc/centos-release" ]]
+				then
+					screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-cinder $(which cinder-${i}) --config-file /usr/share/cinder/cinder-dist.conf --config-file /etc/cinder/cinder.conf --logfile /var/log/cinder/${i}.log;
+				else
+					screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-cinder $(which cinder-${i}) --config-file=/etc/cinder/cinder.conf --log-file=/var/log/cinder/cinder-${i}.log;
+				fi;
+			done;
+	'''
+}
+
+function cinder_controller_stop {
+	ssh root@node-$1 '''
+		for i in cinder-api cinder-scheduler cinder-backup cinder-volume;
+			do
+				kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
+			done;
+		for i in cinder-api cinder-scheduler cinder-backup cinder-volume; 
+                        do
+                                if [[ -f "/etc/centos-release" ]]
+                                then
+                                        service openstack-${i} stop;
+                                else
+                                        service ${i} stop;
+                                fi;
+                        done;
+
+	'''
+}
+
+function cinder_compute_start {
+	true
+}
+
+function cinder_compute_stop {
+	true
+}
 
 case $1 in
      init)
