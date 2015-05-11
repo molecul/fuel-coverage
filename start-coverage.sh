@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron heat murano keystone glance cinder"
+components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -474,6 +474,86 @@ function cinder_compute_start {
 
 function cinder_compute_stop {
 	true
+}
+
+function sahara_controller_start {
+	true
+}
+
+function sahara_controller_stop {
+	true
+}
+
+function sahara_compute_start {
+	true
+}
+
+function sahara_compute_stop {
+	true
+}
+
+function ceilometer_controller_start {
+	ssh root@node-$1 '''
+		for i in openstack-ceilometer-api openstack-ceilometer-collector openstack-ceilometer-alarm-notifier openstack-ceilometer-notification; 
+		do 
+			service $i stop;
+		done;
+		for i in p_openstack-ceilometer-central p_openstack-ceilometer-alarm-evaluator;
+		do 
+			pcs resource disable ${i};
+		done; 
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=ceilometer\r\n" >> /coverage/rc/.coveragerc-ceilometer;
+		cd /coverage/ceilometer; 
+		for i in ceilometer-agent-central ceilometer-api ceilometer-collector ceilometer-alarm-evaluator ceilometer-alarm-notifier ceilometer-agent-notification; 
+		do
+			if [[ -f "/etc/centos-release" ]]
+			then
+				#Need to verify ceilometer config location for centos system
+				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ${i}) --config-file=/etc/ceilometer/ceilometer.conf;
+			else
+				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ${i}) --config-file=/etc/ceilometer/ceilometer.conf;
+			fi;
+		done;
+	'''
+}
+
+function ceilometer_controller_stop {
+	ssh root@node-$1 '''
+		for i in ceilometer-agent-central ceilometer-api ceilometer-collector ceilometer-alarm-evaluator ceilometer-alarm-notifier ceilometer-agent-notification;
+		do 
+			kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
+		done;
+		for i in openstack-ceilometer-api openstack-ceilometer-collector openstack-ceilometer-alarm-notifier openstack-ceilometer-notification;
+		do
+			service ${i} start;
+		done;
+		for i in p_openstack-ceilometer-central p_openstack-ceilometer-alarm-evaluator;
+		do 
+			pcs resource enable ${i};
+		done;
+	'''
+}
+
+function ceilometer_compute_start {
+	ssh root@node-$1 '''
+		service openstack-ceilometer-compute stop;
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=ceilometer\r\n" >> /coverage/rc/.coveragerc-ceilometer;
+		cd /coverage/ceilometer;
+		if [[ -f "/etc/centos-release" ]]
+                        then
+                                #Need to verify ceilometer config location for centos system
+				screen -S openstack-ceilometer-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-agent-compute) --config-file=/etc/ceilometer/ceilometer.con
+                        else
+				screen -S openstack-ceilometer-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-agent-compute) --config-file=/etc/ceilometer/ceilometer.con
+                        fi;
+	'''
+}
+
+function ceilometer_compute_stop {
+	ssh root@node-$1 '''
+		kill $(ps hf -C python | grep "ceilometer-agent-compute" | awk "{print \$1;exit}");
+		service openstack-ceilometer-compute start;
+	'''
 }
 
 case $1 in
