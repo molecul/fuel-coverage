@@ -43,7 +43,7 @@ function coverage_start {
 				eval "cinder_cinder_start $id";
 			fi;
 		done
-	else
+	fi;
 	        for id in $(fuel nodes | grep compute | awk ' {print $1} ')
         	do
                 	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
@@ -55,8 +55,6 @@ function coverage_start {
                 	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
                 	eval "${1}_controller_start $id"
         	done
-
-	fi;
 }
 
 function coverage_stop {
@@ -81,7 +79,7 @@ function coverage_stop {
                         sleep $coverage_sleep
                         scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
                 done
-        else
+        fi;
 		for id in $(fuel nodes | grep compute | awk ' {print $1} ')
 		do
 			eval "${1}_compute_stop $id"
@@ -95,7 +93,6 @@ function coverage_stop {
 			sleep $coverage_sleep
                 	scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
 		done
-	fi;
 	scp -r /tmp/coverage/report/$1 root@node-$gen_ctrl:/coverage/report
 	rm -rf /tmp/coverage
 	ssh root@node-$gen_ctrl """
