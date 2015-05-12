@@ -492,6 +492,8 @@ function cinder_compute_stop {
 
 function cinder_cinder_start {
 	ssh root@node-$1 '''
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=cinder\r\n" >> /coverage/rc/.coveragerc-cinder;
+                cd "/coverage/cinder";
 		if [[ -f "/etc/centos-release" ]];
 		then
 			service openstack-cinder-volume stop;
