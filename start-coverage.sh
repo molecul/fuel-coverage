@@ -478,33 +478,17 @@ function cinder_compute_stop {
 
 function sahara_controller_start {
 	ssh root@node-$1 '''
-		if [[ -f "/etc/centos-release" ]]
-		then
-			service openstack-sahara-all stop;
-		else
-			service sahara-all stop;
-		fi;
+		service sahara-all stop;
 		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=sahara\r\n" >> /coverage/rc/.coveragerc-sahara;
 		cd "/coverage/sahara";
-		if [[ -f "/etc/centos-release" ]]
-		then
-			#Centos
-			
-		else
-			screen -S sahara-all -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-sahara $(which sahara-all) --config-file /etc/sahara/sahara.conf;
-		fi;
-	'''
+		screen -S sahara-all -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-sahara $(which sahara-all) --config-file /etc/sahara/sahara.conf;
+			'''
 }
 
 function sahara_controller_stop {
 	ssh root@node-$1 '''
 		kill -2 $(ps hf -C python | grep "sahara-all" | awk "{print \$1;exit}");
-		if [[ -f "/etc/centos-release" ]]
-		then
-			service openstack-sahara-all start;
-		else
-			service sahara-all stop;
-		fi;
+		service sahara-all stop;
 	'''
 }
 
@@ -533,7 +517,7 @@ function ceilometer_controller_start {
 			if [[ -f "/etc/centos-release" ]]
 			then
 				#Need to verify ceilometer config location for centos system
-				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ${i}) --config-file=/etc/ceilometer/ceilometer.conf;
+				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ${i}) --config-file=/etc/ceilometer/ceilometer.conf --logfile /var/log/ceilometer/${i};
 			else
 				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ${i}) --config-file=/etc/ceilometer/ceilometer.conf;
 			fi;
@@ -566,9 +550,9 @@ function ceilometer_compute_start {
 		if [[ -f "/etc/centos-release" ]]
                         then
                                 #Need to verify ceilometer config location for centos system
-				screen -S openstack-ceilometer-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-agent-compute) --config-file=/etc/ceilometer/ceilometer.con
+				screen -S openstack-ceilometer-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-agent-compute) --logfile /var/log/ceilometer/compute.log;
                         else
-				screen -S openstack-ceilometer-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-agent-compute) --config-file=/etc/ceilometer/ceilometer.con
+				screen -S openstack-ceilometer-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-agent-compute) --config-file=/etc/ceilometer/ceilometer.conf;
                         fi;
 	'''
 }
