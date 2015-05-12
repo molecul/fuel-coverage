@@ -32,10 +32,10 @@ function coverage_start {
 		do
 			id=$(echo $nodes | awk ' {print $1} ')
 			ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
-			if [[ -n "$(echo ${nodes} | grep controller)"]];
+			if [[ -n "$(echo ${nodes} | grep controller)" ]];
 			then
 				eval "cinder_controller_start $id";
-			elif [[ -n "$(echo ${nodes} | grep compute)"]];
+			elif [[ -n "$(echo ${nodes} | grep compute)" ]];
 			then
 				eval "cinder_compute_start $id";
 			else
@@ -68,10 +68,10 @@ function coverage_stop {
                 for nodes in $(fuel nodes | grep cinder)
                 do
                         id=$(echo $nodes | awk ' {print $1} ')
-                        if [[ -n "$(echo ${nodes} | grep controller)"]];
+                        if [[ -n "$(echo ${nodes} | grep controller)" ]];
                         then
                                 eval "cinder_controller_stop $id";
-                        elif [[ -n "$(echo ${nodes} | grep compute)"]];
+                        elif [[ -n "$(echo ${nodes} | grep compute)" ]];
                         then
                                 eval "cinder_compute_stop $id";
                         else
