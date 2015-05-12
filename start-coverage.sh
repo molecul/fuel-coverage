@@ -473,9 +473,9 @@ function cinder_controller_stop {
                         do
                                 if [[ -f "/etc/centos-release" ]];
                                 then
-                                        service openstack-${i} stop;
+                                        service openstack-${i} start;
                                 else
-                                        service ${i} stop;
+                                        service ${i} start;
                                 fi;
                         done;
 
