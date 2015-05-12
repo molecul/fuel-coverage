@@ -28,33 +28,22 @@ function coverage_init {
 function coverage_start {
 	if [ "${1}" == "cinder" ];
 	then	
-		IFS=$'\n'
-		for nodes in $(fuel nodes | grep cinder)
+		for id in $(fuel nodes | grep cinder | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
 		do
-			id=$(echo $nodes | awk ' {print $1} ')
 			ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
-			if [[ -n "$(echo ${nodes} | grep controller)" ]];
-			then
-				eval "cinder_controller_start $id";
-			elif [[ -n "$(echo ${nodes} | grep compute)" ]];
-			then
-				eval "cinder_compute_start $id";
-			else
-				eval "cinder_cinder_start $id";
-			fi;
+			eval "cinder_cinder_start $id";
 		done
 	fi;
-	        for id in $(fuel nodes | grep compute | awk ' {print $1} ')
-        	do
-                	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
-                	eval "${1}_compute_start $id"
-        	done
-
-        	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
-        	do
-                	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
-                	eval "${1}_controller_start $id"
-        	done
+        for id in $(fuel nodes | grep compute | awk ' {print $1} ')
+       	do
+               	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
+               	eval "${1}_compute_start $id"
+       	done
+       	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
+       	do
+               	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
+               	eval "${1}_controller_start $id"
+       	done
 }
 
 function coverage_stop {
@@ -63,36 +52,25 @@ function coverage_stop {
 	mkdir -p /tmp/coverage/report/$2/
         if [ "${1}" == "cinder" ];
         then
-		IFS=$'\n'
-                for nodes in $(fuel nodes | grep cinder)
+                for id in $(fuel nodes | grep cinder | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
                 do
-                        id=$(echo $nodes | awk ' {print $1} ')
-                        if [[ -n "$(echo ${nodes} | grep controller)" ]];
-                        then
-                                eval "cinder_controller_stop $id";
-                        elif [[ -n "$(echo ${nodes} | grep compute)" ]];
-                        then
-                                eval "cinder_compute_stop $id";
-                        else
-                                eval "cinder_cinder_stop $id";
-                        fi;
+                        eval "cinder_cinder_stop $id";
                         sleep $coverage_sleep
                         scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
                 done
         fi;
-		for id in $(fuel nodes | grep compute | awk ' {print $1} ')
-		do
-			eval "${1}_compute_stop $id"
-			sleep $coverage_sleep
-        		scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
-		done
-
-		for id in $(fuel nodes | grep controller | awk ' {print $1} ')
-		do
-                	eval "${1}_controller_stop $id"
-			sleep $coverage_sleep
-                	scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
-		done
+	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
+	do
+		eval "${1}_compute_stop $id"
+		sleep $coverage_sleep
+        	scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
+	done
+	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
+	do
+               	eval "${1}_controller_stop $id"
+		sleep $coverage_sleep
+               	scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
+	done
 	scp -r /tmp/coverage/report/$1 root@node-$gen_ctrl:/coverage/report
 	rm -rf /tmp/coverage
 	ssh root@node-$gen_ctrl """
