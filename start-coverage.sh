@@ -528,7 +528,7 @@ function cinder_cinder_start {
 }
 
 function cinder_cinder_stop {
-	ssh root@node-$2 '''
+	ssh root@node-$1 '''
 		kill $(ps hf -C python | grep "cinder-volume" | awk "{print \$1;exit}");
 		if [[ -f "/etc/centos-release" ]];
 		then
