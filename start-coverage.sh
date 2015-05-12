@@ -34,12 +34,12 @@ function coverage_start {
 			ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
 			if [ -n "$(echo ${nodes} | grep controller)"];
 			then
-				eval "cinder_controller_start $id"
+				eval "cinder_controller_start $id";
 			elif [ -n "$(echo ${nodes} | grep compute)"];
 			then
-				eval "cinder_compute_start $id"
+				eval "cinder_compute_start $id";
 			else
-				eval "cinder_cinder_start $id"
+				eval "cinder_cinder_start $id";
 			fi;
 		done
 	else
@@ -70,12 +70,12 @@ function coverage_stop {
                         id=$(echo $nodes | awk ' {print $1} ')
                         if [ -n "$(echo ${nodes} | grep controller)"];
                         then
-                                eval "cinder_controller_stop $id"
+                                eval "cinder_controller_stop $id";
                         elif [ -n "$(echo ${nodes} | grep compute)"];
                         then
-                                eval "cinder_compute_stop $id"
+                                eval "cinder_compute_stop $id";
                         else
-                                eval "cinder_cinder_stop $id"
+                                eval "cinder_cinder_stop $id";
                         fi;
                         sleep $coverage_sleep
                         scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
