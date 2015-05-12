@@ -28,6 +28,7 @@ function coverage_init {
 function coverage_start {
 	if [ "${1}" == "cinder" ];
 	then	
+		IFS=$'\n'
 		for nodes in $(fuel nodes | grep cinder)
 		do
 			id=$(echo $nodes | awk ' {print $1} ')
@@ -43,7 +44,6 @@ function coverage_start {
 			fi;
 		done
 	else
-	
 	        for id in $(fuel nodes | grep compute | awk ' {print $1} ')
         	do
                 	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
@@ -65,6 +65,7 @@ function coverage_stop {
 	mkdir -p /tmp/coverage/report/$2/
         if [ "${1}" == "cinder" ];
         then
+		IFS=$'\n'
                 for nodes in $(fuel nodes | grep cinder)
                 do
                         id=$(echo $nodes | awk ' {print $1} ')
