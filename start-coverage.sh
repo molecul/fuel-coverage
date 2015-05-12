@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer swift"
+components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -477,11 +477,35 @@ function cinder_compute_stop {
 }
 
 function sahara_controller_start {
-	true
+	ssh root@node-$1 '''
+		if [[ -f "/etc/centos-release" ]]
+		then
+			service openstack-sahara-all stop;
+		else
+			service sahara-all stop;
+		fi;
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=sahara\r\n" >> /coverage/rc/.coveragerc-sahara;
+		cd "/coverage/sahara";
+		if [[ -f "/etc/centos-release" ]]
+		then
+			#Centos
+			
+		else
+			screen -S sahara-all -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-sahara $(which sahara-all) --config-file /etc/sahara/sahara.conf;
+		fi;
+	'''
 }
 
 function sahara_controller_stop {
-	true
+	ssh root@node-$1 '''
+		kill -2 $(ps hf -C python | grep "sahara-all" | awk "{print \$1;exit}");
+		if [[ -f "/etc/centos-release" ]]
+		then
+			service openstack-sahara-all start;
+		else
+			service sahara-all stop;
+		fi;
+	'''
 }
 
 function sahara_compute_start {
