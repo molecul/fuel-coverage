@@ -10,7 +10,7 @@ function coverage_init {
 	for id in $(fuel nodes | grep -e '[0-9]' | awk ' {print $1} ')
         do
 		ssh root@node-$id """
-		if [[ -f "/etc/centos-release" ]]
+		if [[ -f "/etc/centos-release" ]];
 		then
 			yum install -y python-pip python-devel gcc;
 		else
@@ -26,37 +26,75 @@ function coverage_init {
 }
 
 function coverage_start {
-	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
-	do
-		ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
-		eval "${1}_compute_start $id"
-	done
+	if [ "${1}" == "cinder" ];
+	then	
+		for nodes in $(fuel nodes | grep cinder)
+		do
+			id=$(echo $nodes | awk ' {print $1} ')
+			ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
+			if [ -n "$(echo ${nodes} | grep controller)"];
+			then
+				eval "cinder_controller_start $id"
+			elif [ -n "$(echo ${nodes} | grep compute)"];
+			then
+				eval "cinder_compute_start $id"
+			else
+				eval "cinder_cinder_start $id"
+			fi;
+		done
+	else
+	
+	        for id in $(fuel nodes | grep compute | awk ' {print $1} ')
+        	do
+                	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
+                	eval "${1}_compute_start $id"
+        	done
 
-	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
-	do
-	    	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
-		eval "${1}_controller_start $id"
-	done
+        	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
+        	do
+                	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
+                	eval "${1}_controller_start $id"
+        	done
+
+	fi;
 }
 
 function coverage_stop {
 	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
     	ssh root@node-$gen_ctrl "rm -rf /coverage/report/$1; mkdir -p /coverage/report/$1"
 	mkdir -p /tmp/coverage/report/$2/
-	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
-	do
-		eval "${1}_compute_stop $id"
-		sleep $coverage_sleep
-        	scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
-	done
+        if [ "${1}" == "cinder" ];
+        then
+                for nodes in $(fuel nodes | grep cinder)
+                do
+                        id=$(echo $nodes | awk ' {print $1} ')
+                        if [ -n "$(echo ${nodes} | grep controller)"];
+                        then
+                                eval "cinder_controller_stop $id"
+                        elif [ -n "$(echo ${nodes} | grep compute)"];
+                        then
+                                eval "cinder_compute_stop $id"
+                        else
+                                eval "cinder_cinder_stop $id"
+                        fi;
+                        sleep $coverage_sleep
+                        scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
+                done
+        else
+		for id in $(fuel nodes | grep compute | awk ' {print $1} ')
+		do
+			eval "${1}_compute_stop $id"
+			sleep $coverage_sleep
+        		scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
+		done
 
-	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
-	do
-                eval "${1}_controller_stop $id"
-		sleep $coverage_sleep
-                scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
-	done
-
+		for id in $(fuel nodes | grep controller | awk ' {print $1} ')
+		do
+                	eval "${1}_controller_stop $id"
+			sleep $coverage_sleep
+                	scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
+		done
+	fi;
 	scp -r /tmp/coverage/report/$1 root@node-$gen_ctrl:/coverage/report
 	rm -rf /tmp/coverage
 	ssh root@node-$gen_ctrl """
@@ -71,7 +109,7 @@ function coverage_stop {
 function nova_controller_start {
 	ssh root@node-$1 '''
 	for i in api novncproxy objectstore consoleauth scheduler conductor cert; 
-		do if [[ -f "/etc/centos-release" ]]
+		do if [[ -f "/etc/centos-release" ]];
 			then
 				service openstack-nova-$i stop;
 			else
@@ -80,14 +118,14 @@ function nova_controller_start {
 		done;
 	echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" > /coverage/rc/.coveragerc-nova;
 	cd /coverage/nova;
-	if [[ -f "/etc/centos-release" ]]
+	if [[ -f "/etc/centos-release" ]];
                         then
                                	screen -S novncproxy -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-novncproxy) --web /usr/share/novnc/;
                         else
                                 screen -S novncproxy -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-novncproxy) --config-file=/etc/nova/nova.conf;
                         fi;
 	for i in api objectstore consoleauth scheduler conductor cert;
-		do if [[ -f "/etc/centos-release" ]]
+		do if [[ -f "/etc/centos-release" ]];
 			then
 				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-${i}) --logfile /var/log/nova/${i}.log;
 			else
@@ -105,7 +143,7 @@ function nova_controller_stop {
 				kill $(ps hf -C python | grep "nova-${i}" | awk "{print \$1;exit}");
 		done;
 		for i in api novncproxy objectstore consoleauth scheduler conductor cert;
-			do if [[ -f "/etc/centos-release" ]]
+			do if [[ -f "/etc/centos-release" ]];
                         	then
 					service openstack-nova-${i} start;
 				else
@@ -118,7 +156,7 @@ function nova_controller_stop {
 function nova_compute_start {
         ssh root@node-$1 '''
         for i in compute; 
-                do if [[ -f "/etc/centos-release" ]]
+                do if [[ -f "/etc/centos-release" ]];
                         then
                                 service openstack-nova-$i stop;
                         else
@@ -127,7 +165,7 @@ function nova_compute_start {
                 done;
         echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=nova\r\n" > /coverage/rc/.coveragerc-nova;
         cd /coverage/nova;
-        if [[ -f "/etc/centos-release" ]]
+        if [[ -f "/etc/centos-release" ]];
                         then
                                 screen -S nova-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-compute) --logfile /var/log/nova/compute.log;
                         else
@@ -144,7 +182,7 @@ function nova_compute_stop {
                                 kill $(ps hf -C python | grep "nova-${i}" | awk "{print \$1;exit}");
                 done;
                 for i in compute;
-                        do if [[ -f "/etc/centos-release" ]]
+                        do if [[ -f "/etc/centos-release" ]];
                                 then
                                         service openstack-nova-${i} start;
                                 else
@@ -159,7 +197,7 @@ function neutron_controller_start {
 	for i in p_neutron-dhcp-agent p_neutron-metadata-agent p_neutron-l3-agent; 
 		do pcs resource disable ${i};
 		done;	
-	if [[ -f "/etc/centos-release" ]]
+	if [[ -f "/etc/centos-release" ]];
 		then
 			pcs resource disable p_neutron-openvswitch-agent;
                 else
@@ -172,7 +210,7 @@ function neutron_controller_start {
         echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron\r\n" > /coverage/rc/.coveragerc-neutron;
         cd /coverage/neutron;
 
-        if [[ -f "/etc/centos-release" ]]
+        if [[ -f "/etc/centos-release" ]];
                         then
                                 screen -S neutron-server -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-server) --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini --log-file /var/log/neutron/server.log;
                         else
@@ -197,7 +235,7 @@ function neutron_controller_stop {
                 for i in dhcp-agent metadata-agent l3-agent;
 			do pcs resource enable p_neutron-${i};
 		done;
-               	if [[ -f "/etc/centos-release" ]]
+               	if [[ -f "/etc/centos-release" ]];
                                 then
                                         pcs resource enable p_neutron-openvswitch-agent;
                                 else
@@ -210,7 +248,7 @@ function neutron_controller_stop {
 function neutron_compute_start {
         ssh root@node-$1 '''
         for i in openvswitch-agent; 
-                do if [[ -f "/etc/centos-release" ]]
+                do if [[ -f "/etc/centos-release" ]];
                         then
                                 service neutron-${i} stop;
                         else
@@ -219,7 +257,7 @@ function neutron_compute_start {
                 done;
         echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron\r\n" > /coverage/rc/.coveragerc-neutron;
         cd /coverage/neutron;
-        if [[ -f "/etc/centos-release" ]]
+        if [[ -f "/etc/centos-release" ]];
                         then
                                 screen -S neutron-plugin-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --log-file /var/log/neutron/openvswitch-agent.log --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini;
                         else
@@ -231,7 +269,7 @@ function neutron_compute_start {
 function neutron_compute_stop {
         ssh root@node-$1 '''
                 for i in openvswitch-agent;
-                        do if [[ -f "/etc/centos-release" ]]
+                        do if [[ -f "/etc/centos-release" ]];
                                 then
 					echo "neutron-${i}";
 					kill $(ps hf -C python | grep "neutron-${i}" | awk "{print \$1;exit}");
@@ -248,14 +286,14 @@ function neutron_compute_stop {
 function heat_controller_start {
 	ssh root@node-$1 '''
 		for i in heat-api-cfn heat-api-cloudwatch heat-api; 
-			do if [[ -f "/etc/centos-release" ]]
+			do if [[ -f "/etc/centos-release" ]];
 				then
 					service openstack-${i} stop;
 				else
 					service ${i} stop;
 				fi;
 		done;
-		if [[ -f "/etc/centos-release" ]]
+		if [[ -f "/etc/centos-release" ]];
 		then
 			pcs resource disable p_openstack-heat-engine;
 		else
@@ -265,7 +303,7 @@ function heat_controller_start {
 		cd "/coverage/heat";
 		for i in heat-api-cfn heat-engine heat-api-cloudwatch heat-api;
 			do
-				if [[ -f "/etc/centos-release" ]]
+				if [[ -f "/etc/centos-release" ]];
 				then 
 					screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-heat $(which ${i}) --config-file /etc/heat/heat.conf;
 				else
@@ -281,14 +319,14 @@ function heat_controller_stop {
 			do kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
 		done;
 		for i in heat-api-cfn heat-api-cloudwatch heat-api;
-			if [[ -f "/etc/centos-release" ]]
+			if [[ -f "/etc/centos-release" ]];
 			then
 				do service openstack-${i} start;
 			else
 				do service ${i} start;
 			fi;
 		done;
-		if [[ -f "/etc/centos-release" ]]
+		if [[ -f "/etc/centos-release" ]];
 		then
 			pcs resource enable p_openstack-heat-engine;
 		else
@@ -307,7 +345,7 @@ function heat_compute_stop {
 
 function keystone_controller_start {
 	ssh root@node-$1 '''
-		if [[ -f "/etc/centos-release" ]]
+		if [[ -f "/etc/centos-release" ]];
 		then
 			service openstack-keystone stop;
 		else
@@ -322,7 +360,7 @@ function keystone_controller_start {
 function keystone_controller_stop {
 	ssh root@node-$1 '''
 		kill $(ps hf -C python | grep "keystone-all" | awk "{print \$1;exit}");
-		if [[ -f "/etc/centos-release" ]]
+		if [[ -f "/etc/centos-release" ]];
 		then
 			service openstack-keystone start;
 		else
@@ -381,7 +419,7 @@ function glance_controller_start {
 	ssh root@node-$1 '''
 		for i in glance-api glance-registry;
 			do
-				if [[ -f "/etc/centos-release" ]]
+				if [[ -f "/etc/centos-release" ]];
 				then
 					service openstack-${i} stop;
 				else
@@ -405,7 +443,7 @@ function glance_controller_stop {
 			done;
 		for i in glance-api glance-registry;
 			do 
-                                if [[ -f "/etc/centos-release" ]]
+                                if [[ -f "/etc/centos-release" ]];
                                 then
                                         service openstack-${i} start;
                                 else
@@ -427,7 +465,7 @@ function cinder_controller_start {
 	ssh root@node-$1 '''
 		for i in cinder-api cinder-scheduler cinder-backup cinder-volume;
                         do
-                                if [[ -f "/etc/centos-release" ]]
+                                if [[ -f "/etc/centos-release" ]];
                                 then
                                         service openstack-${i} stop;
                                 else
@@ -439,7 +477,7 @@ function cinder_controller_start {
 		cd "/coverage/cinder";
 		for i in api scheduler backup volume;
 			do
-				if [[ -f "/etc/centos-release" ]]
+				if [[ -f "/etc/centos-release" ]];
 				then
 					screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-cinder $(which cinder-${i}) --config-file /usr/share/cinder/cinder-dist.conf --config-file /etc/cinder/cinder.conf --logfile /var/log/cinder/${i}.log;
 				else
@@ -457,7 +495,7 @@ function cinder_controller_stop {
 			done;
 		for i in cinder-api cinder-scheduler cinder-backup cinder-volume; 
                         do
-                                if [[ -f "/etc/centos-release" ]]
+                                if [[ -f "/etc/centos-release" ]];
                                 then
                                         service openstack-${i} stop;
                                 else
@@ -474,6 +512,31 @@ function cinder_compute_start {
 
 function cinder_compute_stop {
 	true
+}
+
+function cinder_cinder_start {
+	ssh root@node-$1 '''
+		if [[ -f "/etc/centos-release" ]];
+		then
+			service openstack-cinder-volume stop;
+			screen -S cinder-volume -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-cinder $(which cinder-volume) --config-file=/etc/cinder/cinder.conf --log-file=/var/log/cinder/cinder-volume.log;
+		else
+			service cinder-volume stop;
+			screen -S cinder-volume -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-cinder $(which cinder-volume) --config-file=/etc/cinder/cinder.conf --log-file=/var/log/cinder/cinder-volume.log;
+		fi;
+	'''
+}
+
+function cinder_cinder_stop {
+	ssh root@node-$2 '''
+		kill $(ps hf -C python | grep "cinder-volume" | awk "{print \$1;exit}");
+		if [[ -f "/etc/centos-release" ]];
+		then
+			service openstack-cinder-volume start;
+		else
+			service cinder-volume start;
+		fi;
+	'''
 }
 
 function sahara_controller_start {
@@ -514,9 +577,8 @@ function ceilometer_controller_start {
 		cd /coverage/ceilometer; 
 		for i in ceilometer-agent-central ceilometer-api ceilometer-collector ceilometer-alarm-evaluator ceilometer-alarm-notifier ceilometer-agent-notification; 
 		do
-			if [[ -f "/etc/centos-release" ]]
+			if [[ -f "/etc/centos-release" ]];
 			then
-				#Need to verify ceilometer config location for centos system
 				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ${i}) --config-file=/etc/ceilometer/ceilometer.conf --logfile /var/log/ceilometer/${i};
 			else
 				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ${i}) --config-file=/etc/ceilometer/ceilometer.conf;
@@ -547,9 +609,8 @@ function ceilometer_compute_start {
 		service openstack-ceilometer-compute stop;
 		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=ceilometer\r\n" >> /coverage/rc/.coveragerc-ceilometer;
 		cd /coverage/ceilometer;
-		if [[ -f "/etc/centos-release" ]]
+		if [[ -f "/etc/centos-release" ]];
                         then
-                                #Need to verify ceilometer config location for centos system
 				screen -S openstack-ceilometer-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-agent-compute) --logfile /var/log/ceilometer/compute.log;
                         else
 				screen -S openstack-ceilometer-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-agent-compute) --config-file=/etc/ceilometer/ceilometer.conf;
