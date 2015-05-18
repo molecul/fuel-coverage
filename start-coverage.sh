@@ -295,6 +295,7 @@ function heat_controller_stop {
 			do kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
 		done;
 		for i in heat-api-cfn heat-api-cloudwatch heat-api;
+		do 
 			if [[ -f "/etc/centos-release" ]];
 			then
 				do service openstack-${i} start;
