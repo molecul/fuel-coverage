@@ -42,6 +42,7 @@ function coverage_start {
        	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
        	do
                	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
+               	rabbit_restart $id
                	eval "${1}_controller_start $id"
        	done
 }
@@ -70,6 +71,7 @@ function coverage_stop {
                	eval "${1}_controller_stop $id"
 		sleep $coverage_sleep
                	scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
+               	rabbit_restart $id
 	done
 	scp -r /tmp/coverage/report/$1 root@node-$gen_ctrl:/coverage/report
 	rm -rf /tmp/coverage
@@ -274,8 +276,6 @@ function heat_controller_start {
 			pcs resource disable p_openstack-heat-engine;
 		else
 			pcs resource disable p_heat-engine;
-			pcs resource disable master_p_rabbitmq-server;
-			pcs resource enable master_p_rabbitmq-server;
 		fi;
 		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=heat\r\n" >> /coverage/rc/.coveragerc-heat; 
 		cd "/coverage/heat";
@@ -310,8 +310,6 @@ function heat_controller_stop {
 			pcs resource enable p_openstack-heat-engine;
 		else
 			pcs resource enable p_heat-engine;
-			pcs resource disable master_p_rabbitmq-server;
-			pcs resource enable master_p_rabbitmq-server;
 		fi;
 	'''
 }
@@ -622,6 +620,19 @@ function swift_compute_start {
 
 function swift_compute_stop {
 	true
+}
+
+function rabbit_restart {
+	ssh root@node-$1 '''
+		if [[ -f "/etc/centos-release" ]];
+		then
+			pcs resource disable master_p_rabbitmq-server;
+			pcs resource enable master_p_rabbitmq-server;
+		else
+			pcs resource disable master_p_rabbitmq-server;
+			pcs resource enable master_p_rabbitmq-server;
+		fi;
+	'''
 }
 
 case $1 in
