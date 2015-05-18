@@ -274,6 +274,8 @@ function heat_controller_start {
 			pcs resource disable p_openstack-heat-engine;
 		else
 			pcs resource disable p_heat-engine;
+			pcs resource disable master_p_rabbitmq-server;
+			pcs resource enable master_p_rabbitmq-server;
 		fi;
 		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=heat\r\n" >> /coverage/rc/.coveragerc-heat; 
 		cd "/coverage/heat";
@@ -308,6 +310,8 @@ function heat_controller_stop {
 			pcs resource enable p_openstack-heat-engine;
 		else
 			pcs resource enable p_heat-engine;
+			pcs resource disable master_p_rabbitmq-server;
+			pcs resource enable master_p_rabbitmq-server;
 		fi;
 	'''
 }
