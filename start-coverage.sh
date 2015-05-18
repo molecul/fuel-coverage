@@ -625,10 +625,13 @@ function swift_compute_stop {
 function rabbit_restart {
 	ssh root@node-$1 '''
 		if [[ -f "/etc/centos-release" ]];
+		
 		then
+			echo "Restart RabbitMQ"
 			pcs resource disable master_p_rabbitmq-server;
 			pcs resource enable master_p_rabbitmq-server;
 		else
+			echo "Restart RabbitMQ"
 			pcs resource disable master_p_rabbitmq-server;
 			pcs resource enable master_p_rabbitmq-server;
 		fi;
