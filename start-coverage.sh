@@ -624,10 +624,10 @@ case $1 in
 	coverage_$1
          ;;
      start)
-	coverage_$1 $2
-         ;;
+	[[ $components_enable =~ (^| )$2($| ) ]] && coverage_$1 $2 || echo -e '\033[31mUnknown component\033[0m'
+	 ;;
      stop)
-	coverage_$1 $2
+	[[ $components_enable =~ (^| )$2($| ) ]] && coverage_$1 $2 || echo -e '\033[31mUnknown component\033[0m'
         ;;
      help)
 	echo """
