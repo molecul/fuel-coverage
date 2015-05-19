@@ -300,9 +300,9 @@ function heat_controller_stop {
 		do 
 			if [[ -f "/etc/centos-release" ]];
 			then
-				do service openstack-${i} start;
+				service openstack-${i} start;
 			else
-				do service ${i} start;
+				service ${i} start;
 			fi;
 		done;
 		if [[ -f "/etc/centos-release" ]];
