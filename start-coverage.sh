@@ -239,7 +239,7 @@ function neutron_compute_start {
                         then
                                 screen -S neutron-plugin-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --log-file /var/log/neutron/openvswitch-agent.log --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini;
                         else
-				screen -S neutron-plugin-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-plugin-openvswitch-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/ovs-agent.log;
+				screen -S neutron-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/ovs-agent.log;
                         fi;
         '''
 }
@@ -254,8 +254,8 @@ function neutron_compute_stop {
                                         service neutron-${i} start;
                                 else
 					echo "neutron-plugin-${i}";
-                                        kill $(ps hf -C python | grep "neutron-plugin-${i}" | awk "{print \$1;exit}");
-                                        service neutron-plugin-${i} start;
+                                        kill $(ps hf -C python | grep "neutron-${i}" | awk "{print \$1;exit}");
+                                        service neutron-${i} start;
                                 fi;
                 done;
         '''
