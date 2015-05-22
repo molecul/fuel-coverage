@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xe
 
 coverage_sleep="20"
 #List enable components
