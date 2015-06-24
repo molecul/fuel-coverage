@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer"
+components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer oslo.messaging"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -605,6 +605,55 @@ function ceilometer_compute_stop {
 		service openstack-ceilometer-compute start;
 	'''
 }
+
+function oslo.messaging_controller_start {
+	ssh root@node-$1 '''
+        OSLO_MESSAGING_INIT=`python -c "import oslo.messaging; print oslo.messaging.__file__" | sed s/.pyc$/.py/`
+        OSLO_MESSAGING_PATH=`python -c "import oslo.messaging; print oslo.messaging.__path__[0]"`
+        cp ${OSLO_MESSAGING_INIT} ${OSLO_MESSAGING_INIT}.bkp
+        sed -i "1 i\import coverage\n\ncov = coverage.coverage(\n    auto_data=True,\n    data_file=\".coverage\",\n    config_file=False,\n    source=[\"${OSLO_MESSAGING_PATH}\"],\n    omit=[\"${OSLO_MESSAGING_PATH}/tests/*\"])\n\ncov.start()\n\n" ${OSLO_MESSAGING_INIT}
+        sudo reboot
+	'''
+}
+
+function oslo.messaging_controller_stop {
+	ssh root@node-$1 '''
+        OSLO_MESSAGING_INIT=`python -c "import oslo.messaging; print oslo.messaging.__file__" | sed s/.pyc$/.py/`
+        mv ${OSLO_MESSAGING_INIT}.bkp ${OSLO_MESSAGING_INIT}
+        sudo reboot
+	'''
+    # Check, that node is up and receive ssh connection
+    ssh root@node-$1 exit
+    while [ $? -gt 0 ]; do
+        sleep 3
+        ssh root@node-$1 exit
+    done
+}
+
+function oslo.messaging_compute_start {
+	ssh root@node-$1 '''
+        OSLO_MESSAGING_INIT=`python -c "import oslo.messaging; print oslo.messaging.__file__" | sed s/.pyc$/.py/`
+        OSLO_MESSAGING_PATH=`python -c "import oslo.messaging; print oslo.messaging.__path__[0]"`
+        cp ${OSLO_MESSAGING_INIT} ${OSLO_MESSAGING_INIT}.bkp
+        sed -i "1 i\import coverage\n\ncov = coverage.coverage(\n    auto_data=True,\n    data_file=\".coverage\",\n    config_file=False,\n    source=[\"${OSLO_MESSAGING_PATH}\"],\n    omit=[\"${OSLO_MESSAGING_PATH}/tests/*\"])\n\ncov.start()\n\n" ${OSLO_MESSAGING_INIT}
+        sudo reboot
+	'''
+}
+
+function oslo.messaging_compute_stop {
+	ssh root@node-$1 '''
+        OSLO_MESSAGING_INIT=`python -c "import oslo.messaging; print oslo.messaging.__file__" | sed s/.pyc$/.py/`
+        mv ${OSLO_MESSAGING_INIT}.bkp ${OSLO_MESSAGING_INIT}
+        sudo reboot
+	'''
+    # Check, that node is up and receive ssh connection
+    ssh root@node-$1 exit
+    while [ $? -gt 0 ]; do
+        sleep 3
+        ssh root@node-$1 exit
+    done
+}
+
 
 function swift_controller_start {
 	true
