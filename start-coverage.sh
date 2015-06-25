@@ -620,6 +620,7 @@ function oslo.messaging_controller_stop {
 	ssh root@node-$1 '''
         OSLO_MESSAGING_INIT=`python -c "import oslo.messaging; print oslo.messaging.__file__" | sed s/.pyc$/.py/`
         mv ${OSLO_MESSAGING_INIT}.bkp ${OSLO_MESSAGING_INIT}
+        rm ${OSLO_MESSAGING_INIT}c # remove .pyc file
         sudo reboot
 	'''
     # Check, that node is up and receive ssh connection
@@ -644,6 +645,7 @@ function oslo.messaging_compute_stop {
 	ssh root@node-$1 '''
         OSLO_MESSAGING_INIT=`python -c "import oslo.messaging; print oslo.messaging.__file__" | sed s/.pyc$/.py/`
         mv ${OSLO_MESSAGING_INIT}.bkp ${OSLO_MESSAGING_INIT}
+        rm ${OSLO_MESSAGING_INIT}c # remove .pyc file
         sudo reboot
 	'''
     # Check, that node is up and receive ssh connection
