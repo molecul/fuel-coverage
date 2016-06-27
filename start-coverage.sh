@@ -86,7 +86,7 @@ function coverage_stop {
 
 function nova_controller_start {
 	ssh root@node-$1 '''
-	for i in api novncproxy objectstore consoleauth scheduler conductor cert; 
+	for i in api novncproxy consoleauth scheduler conductor cert; 
 		do if [[ -f "/etc/centos-release" ]];
 			then
 				service openstack-nova-$i stop;
@@ -102,7 +102,7 @@ function nova_controller_start {
                         else
                                 screen -S novncproxy -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-novncproxy) --config-file=/etc/nova/nova.conf;
                         fi;
-	for i in api objectstore consoleauth scheduler conductor cert;
+	for i in api consoleauth scheduler conductor cert;
 		do if [[ -f "/etc/centos-release" ]];
 			then
 				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-nova $(which nova-${i}) --logfile /var/log/nova/${i}.log;
@@ -115,12 +115,12 @@ function nova_controller_start {
 
 function nova_controller_stop {
 	ssh root@node-$1 '''
-		for i in api novncproxy objectstore consoleauth scheduler conductor cert;
+		for i in api novncproxy consoleauth scheduler conductor cert;
 			do 
 				echo "nova-${i}";
 				kill $(ps hf -C python | grep "nova-${i}" | awk "{print \$1;exit}");
 		done;
-		for i in api novncproxy objectstore consoleauth scheduler conductor cert;
+		for i in api novncproxy consoleauth scheduler conductor cert;
 			do if [[ -f "/etc/centos-release" ]];
                         	then
 					service openstack-nova-${i} start;
@@ -396,7 +396,7 @@ function murano_compute_stop {
 
 function glance_controller_start {
 	ssh root@node-$1 '''
-		for i in glance-api glance-registry;
+		for i in glance-api glance-registry glance-glare;
 			do
 				if [[ -f "/etc/centos-release" ]];
 				then
@@ -416,11 +416,11 @@ function glance_controller_start {
 
 function glance_controller_stop {
 	ssh root@node-$1 '''
-		for i in glance-api glance-registry;
+		for i in glance-api glance-registry glance-glare;
 			do
 				kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
 			done;
-		for i in glance-api glance-registry;
+		for i in glance-api glance-registry glance-glare;
 			do 
                                 if [[ -f "/etc/centos-release" ]];
                                 then
