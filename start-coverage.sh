@@ -177,9 +177,9 @@ function neutron_controller_start {
 		done;	
 	if [[ -f "/etc/centos-release" ]];
 		then
-			pcs resource disable p_neutron-openvswitch-agent;
+			pcs resource disable neutron-openvswitch-agent;
                 else
-              		pcs resource disable p_neutron-plugin-openvswitch-agent;
+              		pcs resource disable neutron-plugin-openvswitch-agent;
         	fi;
 
         for i in server; 
@@ -211,13 +211,13 @@ function neutron_controller_stop {
                                 kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
                 done;
                 for i in dhcp-agent metadata-agent l3-agent;
-			do pcs resource enable p_neutron-${i};
+			do pcs resource enable neutron-${i};
 		done;
                	if [[ -f "/etc/centos-release" ]];
                                 then
-                                        pcs resource enable p_neutron-openvswitch-agent;
+                                        pcs resource enable neutron-openvswitch-agent;
                                 else
-                                        pcs resource enable p_neutron-plugin-openvswitch-agent;
+                                        pcs resource enable neutron-plugin-openvswitch-agent;
                                 fi;
 		service neutron-server start;
         '''
