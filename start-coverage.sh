@@ -172,15 +172,9 @@ function nova_compute_stop {
 
 function neutron_controller_start {
         ssh root@node-$1 '''
-	for i in neutron-dhcp-agent neutron-metadata-agent neutron-l3-agent; 
-		do pcs resource disable ${i};
-		done;	
-	if [[ -f "/etc/centos-release" ]];
-		then
-			pcs resource disable neutron-openvswitch-agent;
-                else
-              		pcs resource disable neutron-plugin-openvswitch-agent;
-        	fi;
+	for i in dhcp metadata l3 openvswitch; 
+		do pcs resource disable neutron-${i}-agent;
+		done;
 
         for i in server; 
    		do service neutron-$i stop;
@@ -192,9 +186,9 @@ function neutron_controller_start {
                         then
                                 screen -S neutron-server -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-server) --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini --log-file /var/log/neutron/server.log;
                         else
-                                screen -S neutron-server -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-server) --config-file /etc/neutron/neutron.conf --log-file /var/log/neutron/server.log --config-file /etc/neutron/plugin.ini;
+                                screen -S neutron-server -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-server) --config-file /etc/neutron/neutron.conf --log-file /var/log/neutron/server.log --config-file /etc/neutron/plugins/ml2/ml2_conf.ini;
 			fi;
-        screen -S neutron-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/openvswitch-agent.log;
+        screen -S neutron-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugins/ml2/openvswitch_agent.ini --log-file=/var/log/neutron/openvswitch-agent.log;
 		
 
 	for i in dhcp l3 metadata;
@@ -210,15 +204,10 @@ function neutron_controller_stop {
                                 echo "${i}";
                                 kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
                 done;
-                for i in dhcp-agent metadata-agent l3-agent;
-			do pcs resource enable neutron-${i};
+                for i in dhcp metadata l3 openvswitch;
+			do pcs resource enable neutron-${i}-agent;
 		done;
-               	if [[ -f "/etc/centos-release" ]];
-                                then
-                                        pcs resource enable neutron-openvswitch-agent;
-                                else
-                                        pcs resource enable neutron-plugin-openvswitch-agent;
-                                fi;
+
 		service neutron-server start;
         '''
 }
@@ -239,7 +228,7 @@ function neutron_compute_start {
                         then
                                 screen -S neutron-plugin-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --log-file /var/log/neutron/openvswitch-agent.log --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini;
                         else
-				screen -S neutron-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugin.ini --log-file=/var/log/neutron/ovs-agent.log;
+				screen -S neutron-openvswitch-agent -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-neutron $(which neutron-openvswitch-agent) --config-file=/etc/neutron/neutron.conf --config-file=/etc/neutron/plugins/ml2/openvswitch_agent.ini --log-file=/var/log/neutron/neutron-openvswitch-agent.log;
                         fi;
         '''
 }
