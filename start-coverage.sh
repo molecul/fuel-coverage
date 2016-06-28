@@ -214,14 +214,7 @@ function neutron_controller_stop {
 
 function neutron_compute_start {
         ssh root@node-$1 '''
-        for i in openvswitch-agent; 
-                do if [[ -f "/etc/centos-release" ]];
-                        then
-                                service neutron-${i} stop;
-                        else
-                                service neutron-plugin-${i} stop;
-                        fi;
-                done;
+	service neutron-openvswitch-agent stop;
         echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=neutron\r\n" > /coverage/rc/.coveragerc-neutron;
         cd /coverage/neutron;
         if [[ -f "/etc/centos-release" ]];
@@ -242,7 +235,7 @@ function neutron_compute_stop {
 					kill $(ps hf -C python | grep "neutron-${i}" | awk "{print \$1;exit}");
                                         service neutron-${i} start;
                                 else
-					echo "neutron-plugin-${i}";
+					echo "neutron-${i}";
                                         kill $(ps hf -C python | grep "neutron-${i}" | awk "{print \$1;exit}");
                                         service neutron-${i} start;
                                 fi;
