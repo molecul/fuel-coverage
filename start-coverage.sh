@@ -172,7 +172,7 @@ function nova_compute_stop {
 
 function neutron_controller_start {
         ssh root@node-$1 '''
-	for i in p_neutron-dhcp-agent p_neutron-metadata-agent p_neutron-l3-agent; 
+	for i in neutron-dhcp-agent neutron-metadata-agent neutron-l3-agent; 
 		do pcs resource disable ${i};
 		done;	
 	if [[ -f "/etc/centos-release" ]];
