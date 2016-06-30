@@ -350,7 +350,7 @@ function murano_controller_start {
 		
 		for i in murano-api murano-engine;
 			do
-				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-murano $(which ${i}) --config-file=/etc/murano/murano.conf;
+				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-murano $(which ${i}) --log-file=/var/log/murano/${i}.log --config-file=/etc/murano/murano.conf;
 			done;
 	'''
 }
