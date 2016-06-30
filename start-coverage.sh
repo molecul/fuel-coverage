@@ -342,7 +342,7 @@ function murano_controller_start {
 	ssh root@node-$1 '''
 		for i in murano-api murano-engine;
 			do 
-				service openstack-${i} stop;
+				service ${i} stop;
 			done;
 		
 		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=murano\r\n" >> /coverage/rc/.coveragerc-murano;
@@ -363,7 +363,7 @@ function murano_controller_stop {
 			done;
 		for i in murano-api murano-engine;
 			do 
-				service openstack-${i} start;
+				service ${i} start;
 			done;
 	'''
 }
