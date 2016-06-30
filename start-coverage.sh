@@ -78,9 +78,14 @@ function coverage_stop {
 	ssh root@node-$gen_ctrl """
 		cd /coverage/report/$1/;
 		coverage combine;
-		coverage report --omit=\`python -c \"import os; from $1 import openstack; print os.path.dirname(os.path.abspath(openstack.__file__))\"\`/* -m >> report_$1
+		coverage report --omit=\`python -c \"import os; from $1 import openstack; print os.path.dirname(os.path.abspath(openstack.__file__))\"\`/* -m >> report_$1;
+		coverage html;
+		tar -czvf report_html_$1.tar.gz htmlcov;
 		"""
-	scp root@node-$gen_ctrl:/coverage/report/$1/report_$1 ~/report_$1_$(date +"%d-%m-%Y_%T")
+	$report_date=$(date +"%d-%m-%Y_%T")
+	scp root@node-$gen_ctrl:/coverage/report/$1/report_$1 ~/report_$1_${report_date}
+	scp root@node-$gen_ctrl:/coverage/report/$1/report_html_$1.tar.gz ~/report_html_$1_${report_date}.tar.gz
+	
 	
 }
 
