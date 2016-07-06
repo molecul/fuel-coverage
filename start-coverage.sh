@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer oslo.messaging"
+components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer oslo.messaging ironic"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -34,6 +34,16 @@ function coverage_start {
 			eval "cinder_cinder_start $id";
 		done
 	fi;
+
+	if [ "${1}" == "ironic" ];
+	then	
+		for id in $(fuel nodes | grep ironic | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
+		do
+			ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
+			eval "ironic_ironic_start $id";
+		done
+	fi;
+	
         for id in $(fuel nodes | grep compute | awk ' {print $1} ')
        	do
                	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
@@ -60,6 +70,17 @@ function coverage_stop {
                         scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
                 done
         fi;
+
+        if [ "${1}" == "ironic" ];
+        then
+                for id in $(fuel nodes | grep ironic | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
+                do
+                        eval "ironic_ironic_stop $id";
+                        sleep $coverage_sleep
+                        scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
+                done
+        fi;
+        
 	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
 	do
 		eval "${1}_compute_stop $id"
@@ -659,6 +680,47 @@ function swift_compute_start {
 function swift_compute_stop {
 	true
 }
+
+function ironic_controller_start {
+	ssh root@node-$1 '''
+		service ironic-api stop;
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=ironic\r\n" >> /coverage/rc/.coveragerc-ironic;
+		cd "/coverage/ironic";
+		screen -S ironic-api -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ironic $(which ironic-api) --log-file=/var/log/ironic/ironic-api.log --config-file=/etc/ironic/ironic.conf;
+			'''
+}
+
+function ironic_controller_stop {
+	ssh root@node-$1 '''
+		kill -2 $(ps hf -C python | grep "ironic-api" | awk "{print \$1;exit}");
+		service ironic-api start;
+	'''
+}
+
+function ironic_compute_start {
+	true
+}
+
+function ironic_compute_stop {
+	true
+}
+
+function ironic_ironic_start {
+	ssh root@node-$1 '''
+		service ironic-conductor stop;
+		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=ironic\r\n" >> /coverage/rc/.coveragerc-ironic;
+		cd "/coverage/ironic";
+		screen -S ironic-conductor -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ironic $(which ironic-conductor) --log-file=/var/log/ironic/ironic-conductor.log --config-file=/etc/ironic/ironic.conf;
+			'''
+}
+
+function ironic_ironic_stop {
+	ssh root@node-$1 '''
+		kill -2 $(ps hf -C python | grep "ironic-conductor" | awk "{print \$1;exit}");
+		service ironic-conductor start;
+	'''
+}
+
 
 function rabbit_restart {
 	ssh root@node-$1 '''
