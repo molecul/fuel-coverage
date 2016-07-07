@@ -559,39 +559,35 @@ function sahara_compute_stop {
 
 function ceilometer_controller_start {
 	ssh root@node-$1 '''
-		for i in openstack-ceilometer-api openstack-ceilometer-collector openstack-ceilometer-alarm-notifier openstack-ceilometer-notification; 
+		for i in ceilometer-agent-notification ceilometer-api ceilometer-collector ceilometer-polling; 
 		do 
 			service $i stop;
 		done;
-		for i in p_openstack-ceilometer-central p_openstack-ceilometer-alarm-evaluator;
+		for i in p_ceilometer-agent-central;
 		do 
 			pcs resource disable ${i};
 		done; 
 		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=ceilometer\r\n" >> /coverage/rc/.coveragerc-ceilometer;
 		cd /coverage/ceilometer; 
-		for i in ceilometer-agent-central ceilometer-api ceilometer-collector ceilometer-alarm-evaluator ceilometer-alarm-notifier ceilometer-agent-notification; 
+		for i in ceilometer-agent-central ceilometer-agent-notification ceilometer-api ceilometer-collector; 
 		do
-			if [[ -f "/etc/centos-release" ]];
-			then
-				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ${i}) --config-file=/etc/ceilometer/ceilometer.conf --logfile /var/log/ceilometer/${i};
-			else
-				screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ${i}) --config-file=/etc/ceilometer/ceilometer.conf;
-			fi;
+		    screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ${i}) --log-file=/var/log/ceilometer/${i}.log --config-file=/etc/ceilometer/ceilometer.conf;
 		done;
+		screen -S ceilometer-polling -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-polling) --polling-namespaces central --config-file=/etc/ceilometer/ceilometer.conf;
 	'''
 }
 
 function ceilometer_controller_stop {
 	ssh root@node-$1 '''
-		for i in ceilometer-agent-central ceilometer-api ceilometer-collector ceilometer-alarm-evaluator ceilometer-alarm-notifier ceilometer-agent-notification;
+		for i in ceilometer-agent-notification ceilometer-api ceilometer-collector ceilometer-polling ceilometer-agent-central;
 		do 
 			kill $(ps hf -C python | grep "${i}" | awk "{print \$1;exit}");
 		done;
-		for i in openstack-ceilometer-api openstack-ceilometer-collector openstack-ceilometer-alarm-notifier openstack-ceilometer-notification;
+		for i in ceilometer-agent-notification ceilometer-api ceilometer-collector ceilometer-polling;
 		do
 			service ${i} start;
 		done;
-		for i in p_openstack-ceilometer-central p_openstack-ceilometer-alarm-evaluator;
+		for i in p_ceilometer-agent-central;
 		do 
 			pcs resource enable ${i};
 		done;
@@ -600,22 +596,17 @@ function ceilometer_controller_stop {
 
 function ceilometer_compute_start {
 	ssh root@node-$1 '''
-		service openstack-ceilometer-compute stop;
+		service ceilometer-polling;
 		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=ceilometer\r\n" >> /coverage/rc/.coveragerc-ceilometer;
 		cd /coverage/ceilometer;
-		if [[ -f "/etc/centos-release" ]];
-                        then
-				screen -S openstack-ceilometer-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-agent-compute) --logfile /var/log/ceilometer/compute.log;
-                        else
-				screen -S openstack-ceilometer-compute -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-agent-compute) --config-file=/etc/ceilometer/ceilometer.conf;
-                        fi;
+		screen -S ceilometer-polling -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-ceilometer $(which ceilometer-polling) --config-file=/etc/ceilometer/ceilometer.conf --log-file=/var/log/ceilometer/ceilometer-polling.log;
 	'''
 }
 
 function ceilometer_compute_stop {
 	ssh root@node-$1 '''
-		kill $(ps hf -C python | grep "ceilometer-agent-compute" | awk "{print \$1;exit}");
-		service openstack-ceilometer-compute start;
+		kill $(ps hf -C python | grep ceilometer-polling | awk "{print \$1;exit}");
+		service ceilometer-polling start;
 	'''
 }
 
