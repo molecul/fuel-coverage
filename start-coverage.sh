@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer oslo.messaging ironic swift"
+components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer oslo.messaging ironic"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
