@@ -340,7 +340,7 @@ function keystone_controller_start {
 		fi;
 		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=keystone\r\n" >> /coverage/rc/.coveragerc-keystone;
 		cd "/coverage/keystone";
-		screen -S keystone-all -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-keystone $(which keystone-all);
+		screen -S keystone-all -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-keystone $(which keystone-all) --log-file=/var/log/keystone/keystone.log --config-file=/etc/keystone/keystone.conf;
 	'''
 }
 
