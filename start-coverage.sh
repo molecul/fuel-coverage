@@ -667,7 +667,7 @@ function oslo.messaging_compute_stop {
 function swift_controller_start {
 	ssh root@node-$1 '''
 	echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=swift\r\n" >> /coverage/rc/.coveragerc-swift;
-	for i in for i in object account-auditor object-updater container-replicator account-replicator object-replicator container-auditor container-sync proxy account-reaper container object-auditor account container-updater;
+	for i in object account-auditor object-updater container-replicator account-replicator object-replicator container-auditor container-sync proxy account-reaper container object-auditor account container-updater;
 	 do
 	  initctl stop swift-${i};
 	 done;
