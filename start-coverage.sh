@@ -7,7 +7,7 @@ components_enable="nova neutron heat murano keystone glance cinder sahara ceilom
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
 	echo "LogLevel=quiet" >> ~/.ssh/config
-	for id in $(fuel nodes | grep -e '[0-9]' | awk ' {print $1} ')
+	for id in $(fuel nodes | grep ready | grep -e '[0-9]' | awk ' {print $1} ')
         do
 		ssh root@node-$id """
 		if [[ -f "/etc/centos-release" ]];
@@ -28,7 +28,7 @@ function coverage_init {
 function coverage_start {
 	if [ "${1}" == "cinder" ];
 	then	
-		for id in $(fuel nodes | grep cinder | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
+		for id in $(fuel nodes | grep ready | grep cinder | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
 		do
 			ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
 			eval "cinder_cinder_start $id";
@@ -37,19 +37,19 @@ function coverage_start {
 
 	if [ "${1}" == "ironic" ];
 	then	
-		for id in $(fuel nodes | grep ironic | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
+		for id in $(fuel nodes | grep ready | grep ironic | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
 		do
 			ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
 			eval "ironic_ironic_start $id";
 		done
 	fi;
 	
-        for id in $(fuel nodes | grep compute | awk ' {print $1} ')
+        for id in $(fuel nodes | grep ready | grep compute | awk ' {print $1} ')
        	do
                	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
                	eval "${1}_compute_start $id"
        	done
-       	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
+       	for id in $(fuel nodes | grep ready | grep controller | awk ' {print $1} ')
        	do
                	ssh root@node-$id "rm -rf /coverage/$1; mkdir -p /coverage/$1"
                	rabbit_restart $id
@@ -58,12 +58,12 @@ function coverage_start {
 }
 
 function coverage_stop {
-	gen_ctrl=`fuel nodes | grep controller |  awk ' {print $1; exit;} '`
+	gen_ctrl=`fuel nodes | grep ready | grep controller |  awk ' {print $1; exit;} '`
     	ssh root@node-$gen_ctrl "rm -rf /coverage/report/$1; mkdir -p /coverage/report/$1"
 	mkdir -p /tmp/coverage/report/$2/
         if [ "${1}" == "cinder" ];
         then
-                for id in $(fuel nodes | grep cinder | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
+                for id in $(fuel nodes | grep ready | grep cinder | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
                 do
                         eval "cinder_cinder_stop $id";
                         sleep $coverage_sleep
@@ -73,7 +73,7 @@ function coverage_stop {
 
         if [ "${1}" == "ironic" ];
         then
-                for id in $(fuel nodes | grep ironic | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
+                for id in $(fuel nodes | grep ready | grep ironic | grep -v "compute" | grep -v "controller" | awk ' {print $1} ')
                 do
                         eval "ironic_ironic_stop $id";
                         sleep $coverage_sleep
@@ -81,13 +81,13 @@ function coverage_stop {
                 done
         fi;
         
-	for id in $(fuel nodes | grep compute | awk ' {print $1} ')
+	for id in $(fuel nodes | grep ready | grep compute | awk ' {print $1} ')
 	do
 		eval "${1}_compute_stop $id"
 		sleep $coverage_sleep
         	scp -r root@node-$id:/coverage/$1 /tmp/coverage/report/
 	done
-	for id in $(fuel nodes | grep controller | awk ' {print $1} ')
+	for id in $(fuel nodes | grep ready | grep controller | awk ' {print $1} ')
 	do
                	eval "${1}_controller_stop $id"
 		sleep $coverage_sleep
