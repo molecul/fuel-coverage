@@ -103,9 +103,8 @@ function coverage_stop {
 		coverage html;
 		tar -czvf report_html_$1.tar.gz htmlcov;
 		"""
-	$report_date=$(date +"%d-%m-%Y_%T")
-	scp root@node-$gen_ctrl:/coverage/report/$1/report_$1 ~/report_$1_${report_date}
-	scp root@node-$gen_ctrl:/coverage/report/$1/report_html_$1.tar.gz ~/report_html_$1_${report_date}.tar.gz
+	scp root@node-$gen_ctrl:/coverage/report/$1/report_$1 ~/report_$1
+	scp root@node-$gen_ctrl:/coverage/report/$1/report_html_$1.tar.gz ~/report_html_$1.tar.gz
 	
 	
 }
@@ -669,21 +668,21 @@ function swift_controller_start {
 	ssh root@node-$1 '''
 	echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=swift\r\n" >> /coverage/rc/.coveragerc-swift;
 	for i in for i in object account-auditor object-updater container-replicator account-replicator object-replicator container-auditor container-sync proxy account-reaper container object-auditor account container-updater;
-	 do;
+	 do
 	  initctl stop swift-${i};
 	 done;
 	for i in server updater replicator auditor;
-	 do;
+	 do
 	  screen -S swift-object-${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-swift $(which swift-object-${i}) /etc/swift/object-server.conf;
 	 done;
 	 
 	for i in server reaper replicator auditor;
-	 do;
+	 do
 	  screen -S swift-account-${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-swift $(which swift-account-${i}) /etc/swift/account-server.conf;
 	 done;
 	 
 	for i in replicator auditor sync server updater;
-	 do;
+	 do
 	  screen -S swift-container-${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-swift $(which swift-container-${i}) /etc/swift/container-server.conf;
 	 done;
 	
