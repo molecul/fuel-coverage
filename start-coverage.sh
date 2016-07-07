@@ -529,17 +529,23 @@ function cinder_cinder_stop {
 
 function sahara_controller_start {
 	ssh root@node-$1 '''
-		service sahara-all stop;
 		echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=sahara\r\n" >> /coverage/rc/.coveragerc-sahara;
 		cd "/coverage/sahara";
-		screen -S sahara-all -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-sahara $(which sahara-all) --config-file /etc/sahara/sahara.conf;
-			'''
+		for i in sahara-api sahara-engine;
+		do
+		  service ${i} stop;
+		  screen -S ${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-sahara $(which ${i}) --config-file /etc/sahara/sahara.conf;
+		done;
+		'''
 }
 
 function sahara_controller_stop {
 	ssh root@node-$1 '''
-		kill -2 $(ps hf -C python | grep "sahara-all" | awk "{print \$1;exit}");
-		service sahara-all stop;
+	        for i in sahara-api sahara-engine;
+	        do 
+		kill -2 $(ps hf -C python | grep ${i} | awk "{print \$1;exit}");
+		service ${i} stop;
+		done;
 	'''
 }
 
