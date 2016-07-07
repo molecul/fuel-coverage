@@ -2,7 +2,7 @@
 
 coverage_sleep="20"
 #List enable components
-components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer oslo.messaging ironic"
+components_enable="nova neutron heat murano keystone glance cinder sahara ceilometer oslo.messaging ironic swift"
 
 function coverage_init {
 	rm -rf "/etc/fuel/client/config.yaml"
@@ -666,11 +666,35 @@ function oslo.messaging_compute_stop {
 
 
 function swift_controller_start {
-	true
+	ssh root@node-$1 '''
+	echo -e "[run]\r\ndata_file=.coverage\r\nparallel=True\r\nsource=swift\r\n" >> /coverage/rc/.coveragerc-swift;
+	for i in $(initctl list | grep running | grep swift | awk "{ print $1 }"); do initctl stop ${i};done;
+	for i in server updater replicator auditor;
+	 do;
+	  screen -S swift-object-${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-swift $(which swift-object-${i}) /etc/swift/object-server.conf;
+	 done;
+	 
+	for i in server reaper replicator auditor;
+	 do;
+	  screen -S swift-account-${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-swift $(which swift-account-${i}) /etc/swift/account-server.conf;
+	 done;
+	 
+	for i in replicator auditor sync server updater;
+	 do;
+	  screen -S swift-container-${i} -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-swift $(which swift-container-${i}) /etc/swift/container-server.conf;
+	 done;
+	
+	screen -S swift-proxy-server -d -m $(which python) $(which coverage) run --rcfile /coverage/rc/.coveragerc-swift $(which swift-proxy-server) /etc/swift/proxy-server.conf;
+	'''
 }
 
 function swift_controller_stop {
-	true
+	ssh root@node-$1 '''
+	        for i in object account-auditor object-updater container-replicator account-replicator object-replicator container-auditor container-sync proxy account-reaper container object-auditor account container-updater; do
+		kill -2 $(ps hf -C python | grep swift-${i} | awk "{print \$1;exit}");
+		service swift-${i} start;
+		done;
+	'''
 }
 
 function swift_compute_start {
